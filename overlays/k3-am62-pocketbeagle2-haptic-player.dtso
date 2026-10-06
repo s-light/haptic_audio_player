@@ -1,0 +1,165 @@
+// SPDX-License-Identifier: GPL-2.0-only OR MIT
+/*
+ * haptic_audio_player: everything the player needs from the PocketBeagle 2
+ * device tree, in one overlay.
+ *
+ *  - I2S audio: McASP0 <-> WM8960 (Adafruit Voice Bonnet, wired by jumpers)
+ *      P2.01 MCASP0_ACLKX  BCLK   (input, codec is clock master)
+ *      P1.04 MCASP0_AFSX   LRCLK  (input)
+ *      P1.02 MCASP0_AXR0   DAC data  host -> codec  (serializer 0, TX)
+ *      P2.03A MCASP0_AXR1  ADC data  codec -> host  (serializer 1, RX)
+ *    codec control: WM8960 @0x1a on main_i2c2 (P1.26 SDA / P1.28 SCL,
+ *    already muxed + enabled by the stock base DTS - see
+ *    docs/reference/devicetree-base-findings.md)
+ *    MCLK: on-board oscillator of the bonnet (assumed 24 MHz, see below)
+ *  - ecap2 is disabled: the stock DTS lets it claim pad 0x1a4 (= P2.01 =
+ *    MCASP0_ACLKX), which would make McASP0 fail with a pin conflict.
+ *  - SPI0 (P2.25 MOSI / P2.29 SCLK / P2.31 CS0) for the ST7789 display:
+ *    pinctrl re-declared with the kernel-default direction (D0 = MISO in,
+ *    D1 = MOSI out; the stock group has D0 as output) and a spidev child.
+ *  - GPIO pads (the stock DTS has the gpio0/gpio1 pinctrl commented out, so
+ *    the pads keep their reset mux with the input buffer OFF):
+ *      buttons (mode 7, pull-up): P2.02 P2.04 P2.06 P2.08
+ *      display control (outputs): P2.17 DC, P2.18 RST, P2.22 BL
+ *      touch (reserved):          P2.24 INT (in), P2.28 RST (out)
+ *
+ * Pad offsets = register address - 0xF4000 from the official pin table
+ * (docs/reference/pocketbeagle2-pinout.md). Flags/mode style copied from
+ * the stock pocketbeagle2 pinmux dtsi and the sibling light-desk overlays.
+ *
+ * UNTESTED ON HARDWARE - written from the DTS sources. First things to
+ * check at bring-up are listed in docs/BRING-UP.md.
+ */
+
+#include "ti/k3-pinctrl.h"
+
+/dts-v1/;
+/plugin/;
+
+&{/chosen} {
+	overlays {
+		k3-am62-pocketbeagle2-haptic-player.kernel = __TIMESTAMP__;
+	};
+};
+
+&{/} {
+	/* the bonnet's MCLK oscillator (OSC1, ECS-3225MV). FREQUENCY ASSUMED:
+	 * read the marking / measure it and adjust. It only runs while the
+	 * bonnet's privacy switch is ON. */
+	haptic_mclk: haptic-mclk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <24000000>;
+	};
+
+	sound-haptic {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "haptic";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&haptic_codec_dai>;
+		simple-audio-card,frame-master = <&haptic_codec_dai>;
+
+		simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+		};
+
+		haptic_codec_dai: simple-audio-card,codec {
+			sound-dai = <&haptic_wm8960>;
+			clocks = <&haptic_mclk>;
+		};
+	};
+};
+
+&main_pmx0 {
+	haptic_mcasp0_pins: haptic-mcasp0-pins {
+		pinctrl-single,pins = <
+			AM62X_IOPAD(0x01a4, PIN_INPUT, 0)  /* (B20) P2.01  MCASP0_ACLKX  BCLK  */
+			AM62X_IOPAD(0x01a8, PIN_INPUT, 0)  /* (D20) P1.04  MCASP0_AFSX   LRCLK */
+			AM62X_IOPAD(0x01a0, PIN_OUTPUT, 0) /* (E18) P1.02  MCASP0_AXR0   DAC   */
+			AM62X_IOPAD(0x019c, PIN_INPUT, 0)  /* (B18) P2.03A MCASP0_AXR1   ADC   */
+		>;
+	};
+
+	haptic_spi0_pins: haptic-spi0-pins {
+		pinctrl-single,pins = <
+			AM62X_IOPAD(0x01bc, PIN_OUTPUT, 0) /* (A14) P2.29 SPI0_CLK  */
+			AM62X_IOPAD(0x01c0, PIN_INPUT, 0)  /* (B13) P2.27 SPI0_D0 = MISO (unused) */
+			AM62X_IOPAD(0x01c4, PIN_OUTPUT, 0) /* (B14) P2.25 SPI0_D1 = MOSI */
+			AM62X_IOPAD(0x01b4, PIN_OUTPUT, 0) /* (A13) P2.31 SPI0_CS0  */
+		>;
+	};
+
+	haptic_buttons_pins: haptic-buttons-pins {
+		pinctrl-single,pins = <
+			AM62X_IOPAD(0x00b8, PIN_INPUT_PULLUP, 7) /* (U22) P2.02 GPIO0_45 play/pause */
+			AM62X_IOPAD(0x00bc, PIN_INPUT_PULLUP, 7) /* (V24) P2.04 GPIO0_46 record     */
+			AM62X_IOPAD(0x00c0, PIN_INPUT_PULLUP, 7) /* (W25) P2.06 GPIO0_47 prev       */
+			AM62X_IOPAD(0x00c4, PIN_INPUT_PULLUP, 7) /* (W24) P2.08 GPIO0_48 next       */
+		>;
+	};
+
+	haptic_display_pins: haptic-display-pins {
+		pinctrl-single,pins = <
+			AM62X_IOPAD(0x0104, PIN_OUTPUT, 7)       /* (AC24) P2.17 GPIO0_64 LCD_DC  */
+			AM62X_IOPAD(0x00d8, PIN_OUTPUT, 7)       /* (V21)  P2.18 GPIO0_53 LCD_RST */
+			AM62X_IOPAD(0x0100, PIN_OUTPUT, 7)       /* (AC25) P2.22 GPIO0_63 LCD_BL  */
+			AM62X_IOPAD(0x00d0, PIN_INPUT_PULLUP, 7) /* (Y23)  P2.24 GPIO0_51 TP_INT  */
+			AM62X_IOPAD(0x00f8, PIN_OUTPUT, 7)       /* (AB24) P2.28 GPIO0_61 TP_RST  */
+		>;
+	};
+};
+
+/* GPIO pads: the gpio controllers have no pinctrl in the stock DTS, so hang
+ * ours on them (device-level pinctrl is applied when the controller probes). */
+&main_gpio0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&haptic_buttons_pins &haptic_display_pins>;
+};
+
+&ecap2 {
+	status = "disabled";
+};
+
+&main_spi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&haptic_spi0_pins>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	/* userspace SPI access for the display ("rohm,dh2228fv" is one of the
+	 * compatibles the kernel's spidev driver accepts) */
+	display@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <40000000>;
+	};
+};
+
+&main_i2c2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	haptic_wm8960: codec@1a {
+		compatible = "wlf,wm8960";
+		reg = <0x1a>;
+		#sound-dai-cells = <0>;
+		clocks = <&haptic_mclk>;
+		clock-names = "mclk";
+		wlf,shared-lrclk;	/* ADCLRC and DACLRC are one net on the bonnet */
+	};
+};
+
+&mcasp0 {
+	status = "okay";
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&haptic_mcasp0_pins>;
+	op-mode = <0>;		/* I2S */
+	tdm-slots = <2>;
+	serial-dir = <		/* 0: inactive, 1: TX, 2: RX */
+		1 2 0 0
+	>;
+	tx-num-evt = <0>;
+	rx-num-evt = <0>;
+};
