@@ -1,0 +1,38 @@
+# <data partition>/config.toml  (e.g. /srv/haptic/config.toml) - every key is optional, these are the defaults.
+# volume / on_tag_remove / volume_step / long_press_s are also written back by the web UI.
+
+volume = 70             # 0..100 (mpv software volume)
+volume_step = 5         # long-press prev/next
+long_press_s = 0.8
+on_tag_remove = "none"  # none | pause | stop
+port = 8080
+
+[pins]                  # GPIOx_y (official pin table) or a gpioinfo line name such as "P2.02"
+play_pause = "GPIO0_45" # P2.02
+record     = "GPIO0_46" # P2.04
+prev       = "GPIO0_47" # P2.06
+next       = "GPIO0_48" # P2.08
+
+[nfc]
+enabled = true
+i2c_bus = 2             # /dev/i2c-2 = P1.26 SDA / P1.28 SCL
+address = 0x24
+poll_interval = 0.2
+tag_lost_polls = 3
+
+[display]
+enabled = true
+spidev = "/dev/spidev0.0"
+spi_hz = 32000000
+dc = "GPIO0_64"         # P2.17
+rst = "GPIO0_53"        # P2.18
+backlight = "GPIO0_63"  # P2.22
+rotation = 0            # 0 / 90 / 180 / 270
+invert = true
+
+[audio]
+card = "haptic"
+mpv_device = "alsa/plughw:CARD=haptic"
+record_device = "plughw:CARD=haptic,DEV=0"
+record_rate = 44100
+record_channels = 1

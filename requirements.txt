@@ -1,0 +1,7 @@
+# installed into .venv (created with --system-site-packages: python3-libgpiod, python3-aiohttp,
+# python3-pil, python3-numpy come from apt - see setup_pb2.py "packages")
+aiohttp
+pillow
+numpy
+mutagen
+spidev
