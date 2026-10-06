@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# haptic_audio_player
+webui/node_modules/
+webui/dist/
+.venv/
