@@ -55,13 +55,21 @@
       </div>
 
       <q-list v-if="albums.length" bordered separator>
-        <q-expansion-item
-          v-for="a in albums"
-          :key="a.path"
-          :icon="a.single ? 'music_note' : 'album'"
-          :label="a.title"
-          :caption="a.single ? 'Einzellied' : `${a.tracks.length} Titel`"
-        >
+        <q-expansion-item v-for="a in albums" :key="a.path">
+          <template #header>
+            <q-item-section avatar>
+              <q-avatar v-if="a.cover" rounded size="48px">
+                <img :src="coverUrl(a.cover)" loading="lazy" />
+              </q-avatar>
+              <q-icon v-else :name="a.single ? 'music_note' : 'album'" />
+            </q-item-section>
+            <q-item-section>
+              {{ a.title }}
+              <q-item-label caption>
+                {{ a.single ? "Einzellied" : `${a.tracks.length} Titel` }}
+              </q-item-label>
+            </q-item-section>
+          </template>
           <q-card>
             <q-card-actions>
               <q-btn

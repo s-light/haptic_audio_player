@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import time
 from pathlib import Path
 from typing import Callable
 
-from .config import Config, save_persisted
+from .config import COVER_EXTENSIONS, Config, save_persisted
 from .display import View
 from .library import Library
 from .player import PlayerBase
@@ -56,6 +57,7 @@ class Controller:
                 rel = None
             if rel:
                 info["path"] = rel
+                info["cover"] = self.library.track_cover(rel)  # the track's own embedded cover wins ...
                 t = self.library.track(rel)
                 if t:
                     info["title"] = t.title
@@ -63,7 +65,7 @@ class Controller:
                         info["subtitle"] = t.artist
                 album = self.library.get(rel.split("/")[0]) if "/" in rel else None
                 if album is not None:
-                    info["cover"] = album.cover
+                    info["cover"] = info["cover"] or album.cover  # ... else the album's (folder image / first embedded)
                     if not info["subtitle"]:
                         info["subtitle"] = album.title
             elif "recordings" in Path(s["file"]).parts:
@@ -96,13 +98,30 @@ class Controller:
         mode = self.mode
         if self.at_computer:
             return View(mode="computer", title="Speicher am Computer", subtitle="am PC auswerfen oder Kabel ziehen", message=self.message)
-        cover = ""
-        if now["cover"]:
-            cover = str(self.cfg.music_dir / now["cover"])
+        cover = self._cover_file(now["cover"]) if now["cover"] else ""
         if mode == "recording":
             return View(mode=mode, title="Aufnahme läuft", subtitle="", position=int(self.recorder.elapsed), slot=self.recorder.slot or 0, message=self.message)
         return View(mode=mode, title=now["title"], subtitle=now["subtitle"] or "", position=int(s["position"]), duration=int(s["duration"]),
                     index=s["index"], count=s["count"], slot=self.selected_slot, volume=s["volume"], cover=cover, message=self.message)
+
+    def _cover_file(self, rel: str) -> str:
+        """Image file for the display: folder images are used in place, embedded covers are extracted once into
+        a cache below the runtime dir (tmpfs - the root filesystem is read-only)."""
+        src = self.cfg.music_dir / rel
+        if src.suffix.lower() in COVER_EXTENSIONS:
+            return str(src)
+        try:
+            key = hashlib.sha1(f"{rel}:{src.stat().st_mtime_ns}".encode()).hexdigest()[:16]
+            dest = self.cfg.runtime_dir / "covers" / key
+            if not dest.exists():
+                emb = self.library.embedded_cover(rel)
+                if emb is None:
+                    return ""
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(emb[0])
+            return str(dest)
+        except OSError:
+            return ""
 
     def notify(self) -> None:
         snap = None

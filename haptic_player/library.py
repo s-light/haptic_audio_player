@@ -86,19 +86,24 @@ class Library:
     def __init__(self, music_dir: Path):
         self.music_dir = Path(music_dir)
         self.albums: list[Album] = []
+        self._embedded: dict[tuple[str, float], bool] = {}
         self.scan()
 
     def scan(self) -> None:
         base = self.music_dir
+        self._embedded: dict[tuple[str, float], bool] = {}
         albums: list[Album] = []
         if base.is_dir():
             for d in sorted((x for x in base.iterdir() if x.is_dir() and not x.name.startswith(".")), key=lambda x: natural_key(x.name)):
                 files = sorted((f for f in d.rglob("*") if f.is_file() and is_audio(f)), key=lambda f: natural_key(f.relative_to(d).as_posix()))
                 if files:
-                    albums.append(Album(path=d.relative_to(base).as_posix(), title=d.name, tracks=[read_track(base, f) for f in files], cover=find_cover(base, d)))
+                    tracks = [read_track(base, f) for f in files]
+                    # folder image first, else the first track that carries an embedded cover
+                    cover = find_cover(base, d) or next((t.path for t in tracks[:5] if self.track_cover(t.path)), None)
+                    albums.append(Album(path=d.relative_to(base).as_posix(), title=d.name, tracks=tracks, cover=cover))
             for f in sorted((x for x in base.iterdir() if x.is_file() and is_audio(x)), key=lambda x: natural_key(x.name)):
                 t = read_track(base, f)
-                albums.append(Album(path=t.path, title=t.title, tracks=[t], single=True))
+                albums.append(Album(path=t.path, title=t.title, tracks=[t], single=True, cover=self.track_cover(t.path)))
         self.albums = albums
 
     def get(self, path: str) -> Album | None:
@@ -134,8 +139,19 @@ class Library:
             for a in self.albums
         ]
 
+    def track_cover(self, rel: str) -> str | None:
+        """`rel` itself if the track carries an embedded cover (the cover endpoint serves it from the audio
+        file), else None. Cached per scan (the check opens the file)."""
+        try:
+            key = (rel, (self.music_dir / rel).stat().st_mtime)
+        except OSError:
+            return None
+        if key not in self._embedded:
+            self._embedded[key] = self.embedded_cover(rel) is not None
+        return rel if self._embedded[key] else None
+
     def embedded_cover(self, rel: str) -> tuple[bytes, str] | None:
-        """Embedded cover art of a track (mp3 APIC / flac picture / mp4 covr), if mutagen is present."""
+        """Embedded cover art of a track (mp3 APIC, flac/ogg/opus pictures, mp4 covr), if mutagen is present."""
         if mutagen is None:
             return None
         try:
@@ -144,16 +160,29 @@ class Library:
             return None
         if f is None:
             return None
-        pics = getattr(f, "pictures", None)
+        pics = getattr(f, "pictures", None)  # FLAC
         if pics:
             return pics[0].data, pics[0].mime or "image/jpeg"
         tags = getattr(f, "tags", None)
-        if tags is not None:
+        if tags is None:
+            return None
+        try:
             for key in tags.keys():
-                if str(key).startswith("APIC"):
+                if str(key).startswith("APIC"):  # ID3
                     fr = tags[key]
-                    return fr.data, fr.mime
-            covr = tags.get("covr") if hasattr(tags, "get") else None
+                    return fr.data, fr.mime or "image/jpeg"
+            covr = tags.get("covr") if hasattr(tags, "get") else None  # MP4/M4A
             if covr:
-                return bytes(covr[0]), "image/jpeg"
+                png = getattr(covr[0], "imageformat", None) == 14  # MP4Cover.FORMAT_PNG
+                return bytes(covr[0]), "image/png" if png else "image/jpeg"
+            blocks = tags.get("metadata_block_picture") if hasattr(tags, "get") else None  # Ogg Vorbis/Opus
+            if blocks:
+                import base64
+
+                from mutagen.flac import Picture
+
+                pic = Picture(base64.b64decode(blocks[0]))
+                return pic.data, pic.mime or "image/jpeg"
+        except Exception:  # malformed tag: no cover
+            return None
         return None
