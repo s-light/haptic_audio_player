@@ -48,6 +48,7 @@ Implemented (see [docs/PLAN.md](docs/PLAN.md)); **not yet tested on real hardwar
     # -> webui/dist/spa; dev: pnpm dev
     (cd webui && pnpm install && pnpm build)    
     # http://localhost:8080
+    # sound needs mpv (sudo apt install mpv) - without it the simulation runs silently, the UI header says so
     .venv/bin/python -m haptic_player --simulate --data-dir ./temp_test    
     .venv/bin/pytest
     ```
