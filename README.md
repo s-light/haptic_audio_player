@@ -42,10 +42,13 @@ Implemented (see [docs/PLAN.md](docs/PLAN.md)); **not yet tested on real hardwar
 -   on the PocketBeagle 2: `./setup_pb2.py` (steps: `--list-steps`; `readonly-root` last, opt-in)
 -   data partition `LABEL=HAPTIC` (FAT) → `music/`, `recordings/`, `tags.json`, `config.toml` ([config.example.toml](config.example.toml))
 -   try it on a PC without hardware:
-    ```
+
+    ```bash
     python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
-    (cd webui && pnpm install && pnpm build)    # -> webui/dist/spa; dev: pnpm dev
-    .venv/bin/python -m haptic_player --simulate --data-dir /tmp/haptic    # http://localhost:8080
+    # -> webui/dist/spa; dev: pnpm dev
+    (cd webui && pnpm install && pnpm build)    
+    # http://localhost:8080
+    .venv/bin/python -m haptic_player --simulate --data-dir ./temp_test    
     .venv/bin/pytest
     ```
 

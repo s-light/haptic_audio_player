@@ -26,6 +26,7 @@ GROUPS = {
     "spi": ("#fb923c", None, "SPI0 to display"),
     "lcd": ("#facc15", None, "display control GPIO"),
     "btn": ("#a3e635", None, "buttons (to GND, internal pull-up)"),
+    "usb": ("#60a5fa", None, "USB host (usb1) - data stick"),
     "v33": ("#dc2626", None, "3.3 V"),
     "v5": ("#ec4899", "7,5", "5 V (dashed - check before wiring)"),
     "gnd": ("#6b7280", None, "GND"),
@@ -58,6 +59,8 @@ PB = {
     "b3": ("P2.06", "GPIO0_47  prev", "btn"),
     "b4": ("P2.08", "GPIO0_48  next", "btn"),
     "pwr": ("P2.12", "PWR.BTN", "misc"),
+    "usbm": ("P1.09", "USB1.D-", "usb"),
+    "usbp": ("P1.11", "USB1.D+", "usb"),
 }
 
 # peripherals: side = where the box sits relative to the PocketBeagle.
@@ -74,6 +77,11 @@ BOXES = [
     dict(side="L", title="PN532 NFC kit (I2C mode)", sub="DIP switches: I2C (check silkscreen)",
          pins=[("VCC (3.3 V)", "v33a"), ("GND", "gnda"), ("SDA", "sda"), ("SCL", "scl")],
          notes=["I2C address 0x24 - shares I2C2 with the codec", "IRQ / RSTO not connected (polled)"]),
+    dict(side="L", title="USB-A socket (data stick)", sub="usb1 host - music, recordings, tags, config",
+         pins=[("VBUS 5 V", "v5"), ("D-", "usbm"), ("D+", "usbp"), ("GND", "gnda")],
+         notes=["stick = FAT32, label HAPTIC (plugs into the PB2's usb1 host)",
+                "keep D+/D- short and twisted; stick draws up to ~100-500 mA",
+                "check P1.03 / P1.05 (DRVVBUS / VBUS) against the PB2 schematic"]),
     dict(side="R", title="Waveshare 2.8\" LCD (ST7789 + CST328)", sub="optional - 240x320, 3.3 V logic",
          pins=[("VCC (3.3 V)", "v33b"), ("GND", "gndb"), ("MOSI", "mosi"), ("SCLK", "sclk"), ("LCD_CS", "cs"),
                ("LCD_DC", "dc"), ("LCD_RST", "rst"), ("LCD_BL", "bl"), ("TP_INT", "tint"), ("TP_RST", "trst")],

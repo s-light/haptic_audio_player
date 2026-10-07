@@ -8,7 +8,6 @@ import logging
 import os
 import shutil
 import socket
-import sys
 import tempfile
 from pathlib import Path
 
@@ -53,7 +52,7 @@ def local_ip() -> str:
 
 
 def create_app(cfg: Config, ctl: Controller, png_path: Path | None = None) -> web.Application:
-    app = web.Application(client_max_size=0)  # uploads are streamed, no body-size cap
+    app = web.Application(client_max_size=1 << 40)  # uploads are streamed to disk; 0 means "0 bytes" in aiohttp >= 3.14
     app[CONTROLLER], app[CONFIG], app[WSS] = ctl, cfg, set()
     app[PNG] = png_path or (cfg.runtime_dir / "display.png")
     routes = web.RouteTableDef()
@@ -339,24 +338,39 @@ def create_app(cfg: Config, ctl: Controller, png_path: Path | None = None) -> we
         rc, out = await sudo("/usr/bin/systemctl", "poweroff" if action == "shutdown" else "reboot")
         return web.json_response({"ok": rc == 0, "output": out}, status=200 if rc == 0 else 500)
 
-    @routes.post("/api/system/storage")
-    async def storage(request):
-        """mode 'usb': hand the data partition to a connected PC; mode 'player': take it back."""
+    @routes.get("/api/storage")
+    async def storage_get(request):
+        return web.json_response(ctl.storage.snapshot() if ctl.storage else {"mode": "player", "host": False, "available": False, "error": ""})
+
+    @routes.post("/api/storage")
+    async def storage_set(request):
+        """mode 'computer': hand the data stick to the connected computer; 'player': take it back."""
         d = await json_body(request)
         mode = d.get("mode")
-        if mode not in ("usb", "player"):
-            return err(400, "mode must be usb|player")
-        if cfg.simulate:
-            return web.json_response({"ok": True, "simulated": True, "mode": mode})
-        if mode == "usb":
-            await ctl.stop()
-        rc, out = await sudo(sys.executable, "-m", "haptic_player.usbgadget", "on" if mode == "usb" else "off")
-        if rc == 0 and mode == "player":
-            await asyncio.to_thread(ctl.library.scan)
-        return web.json_response({"ok": rc == 0, "output": out, "mode": out.splitlines()[-1] if out else mode}, status=200 if rc == 0 else 500)
+        if mode not in ("computer", "player"):
+            return err(400, "mode must be computer|player")
+        if ctl.storage is None:
+            return err(503, "storage manager not running")
+        ok = await (ctl.storage.to_computer(user=True) if mode == "computer" else ctl.storage.to_player(user=True))
+        return web.json_response({**ctl.storage.snapshot(), "ok": ok}, status=200 if ok else 409)
 
     # ---- dev / simulate ----------------------------------------------
     if cfg.simulate:
+        @routes.post("/api/dev/usb")
+        async def dev_usb(request):
+            """fake a computer plugging in / out: {"host": true|false, "fail_attach": "message"}"""
+            d = await json_body(request)
+            backend = getattr(ctl.storage, "backend", None)
+            if not hasattr(backend, "state"):
+                return err(400, "no fake backend")
+            if "host" in d:
+                backend.state.host = bool(d["host"])
+            if "fail_attach" in d:
+                backend.fail_attach = str(d["fail_attach"])
+            if "eject" in d and d["eject"]:
+                backend.state.attached = False
+            return web.json_response({"ok": True})
+
         @routes.post("/api/dev/scan")
         async def dev_scan(request):
             d = await json_body(request)
@@ -380,6 +394,16 @@ def create_app(cfg: Config, ctl: Controller, png_path: Path | None = None) -> we
         return web.FileResponse(p, headers={"Cache-Control": "no-store"}) if p.exists() else err(404, "no display frame")
 
     app.add_routes(routes)
+
+    @web.middleware
+    async def storage_guard(request, handler):
+        """While the computer owns the data stick nothing may write to the (unmounted) data dir."""
+        if ctl.at_computer and request.method not in ("GET", "HEAD") and request.path.startswith("/api/") \
+                and not request.path.startswith(("/api/storage", "/api/system/power", "/api/dev/")):
+            return err(409, "Speicher ist am Computer - erst zurück zum Player wechseln")
+        return await handler(request)
+
+    app.middlewares.append(storage_guard)
 
     # ---- static web UI (SPA) -----------------------------------------
     dist = Path(cfg.webui_dir)

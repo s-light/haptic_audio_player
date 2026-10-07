@@ -63,19 +63,55 @@
 
       <q-card>
         <q-card-section>
-          <div class="text-h6">USB-Speichermodus</div>
+          <div class="text-h6">Datenträger / USB</div>
           <div class="text-caption">
-            Gibt den Datenträger an einen per USB angeschlossenen Computer frei
-            (Player pausiert solange).
+            Sobald ein Computer per USB verbunden ist, bekommt er den
+            Datenträger (Musik, Aufnahmen) automatisch als USB-Laufwerk, der
+            Player pausiert. Das USB-Netzwerk (diese Seite) bleibt dabei
+            erreichbar. Am Computer auswerfen, Kabel ziehen oder hier
+            zurückschalten gibt ihn dem Player zurück.
           </div>
+          <q-list dense class="q-mt-sm">
+            <q-item>
+              <q-item-section>Besitzer</q-item-section>
+              <q-item-section side>
+                <q-badge
+                  :color="storage.mode === 'computer' ? 'orange' : 'positive'"
+                >
+                  {{ storage.mode === "computer" ? "Computer" : "Player" }}
+                </q-badge>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section>Computer verbunden</q-item-section>
+              <q-item-section side>{{
+                storage.host ? "ja" : "nein"
+              }}</q-item-section>
+            </q-item>
+            <q-item v-if="!storage.available">
+              <q-item-section class="text-negative">
+                USB-Speichermodus nicht eingerichtet (<code
+                  >./setup_pb2.py usb-gadget</code
+                >)
+              </q-item-section>
+            </q-item>
+          </q-list>
+          <q-banner
+            v-if="storage.error"
+            class="bg-red-2 text-black q-mt-sm"
+            dense
+            rounded
+            >{{ storage.error }}</q-banner
+          >
         </q-card-section>
         <q-card-actions>
           <q-btn
             color="primary"
             no-caps
             icon="usb"
-            label="Als USB-Stick freigeben"
-            @click="storage('usb')"
+            label="Jetzt an Computer geben"
+            :disable="storage.mode === 'computer' || !storage.host"
+            @click="setStorage('computer')"
           />
           <q-btn
             color="primary"
@@ -83,7 +119,8 @@
             no-caps
             icon="speaker"
             label="Zurück zum Player"
-            @click="storage('player')"
+            :disable="storage.mode === 'player'"
+            @click="setStorage('player')"
           />
         </q-card-actions>
       </q-card>
@@ -136,8 +173,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useQuasar } from "quasar";
 import { api, type Settings, type SystemInfo } from "@/api";
+import { usePlayerStore } from "@/stores/player";
 
 const REMOVE_OPTIONS = [
   { label: "weiterspielen", value: "none" },
@@ -146,6 +185,8 @@ const REMOVE_OPTIONS = [
 ];
 
 const $q = useQuasar();
+const { state } = storeToRefs(usePlayerStore());
+const storage = computed(() => state.value.storage);
 const settings = reactive<Pick<Settings, "on_tag_remove" | "volume_step">>({
   on_tag_remove: "none",
   volume_step: 5
@@ -175,12 +216,14 @@ const save = async () => {
   $q.notify({ type: "positive", message: "Gespeichert" });
 };
 
-const storage = async (mode: "usb" | "player") => {
-  await api("POST", "/api/system/storage", { mode });
+const setStorage = async (mode: "computer" | "player") => {
+  await api("POST", "/api/storage", { mode });
   $q.notify({
     type: "info",
     message:
-      mode === "usb" ? "Als USB-Stick freigegeben" : "Zurück im Player-Modus"
+      mode === "computer"
+        ? "Datenträger an den Computer übergeben"
+        : "Zurück im Player-Modus"
   });
 };
 

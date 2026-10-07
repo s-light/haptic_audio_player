@@ -18,8 +18,8 @@ Voice Bonnet, PN532, Waveshare LCD, read-only/USB-gadget notes, software-stack n
 | Tag mapping | `tags.json` (UID → album/track/record-slot) | tags hold no data, replaceable |
 | Display | ST7789 over spidev, rendered with Pillow; optional | |
 | Touch (CST328) | wired/reserved, **not implemented in v1** | address clash with WM8960 (0x1A) → needs I2C1 |
-| Storage | root **read-only**; data partition `LABEL=HAPTIC` at `/srv/haptic` | README requirement |
-| USB mass storage | exclusive hand-over via configfs gadget (opt-in, untested) | "best case" item |
+| Storage | root **read-only**; data on a **USB stick** (FAT32, `LABEL=HAPTIC`) in the PB2's usb1 host port, mounted at `/srv/haptic` | README requirement; simplest, no SPI/kernel risk (4-bit SD is not on the headers) |
+| USB to a computer | the board's USB **network gadget stays** (web UI is reached through it); one mass-storage function is added; when a computer enumerates the gadget it automatically gets the stick, the player pauses; switch back in the UI / eject / unplug | "best case" item; exclusive hand-over, never both at once |
 
 ## 2. Hardware / pin plan (details + diagram: `hw/wiring-diagram.svg`, generator `hw/generate-wiring-diagram.py`)
 

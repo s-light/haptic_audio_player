@@ -30,6 +30,11 @@ backlight = "GPIO0_63"  # P2.22
 rotation = 0            # 0 / 90 / 180 / 270
 invert = true
 
+[usb]                   # computer connected via USB -> it gets the data stick as a USB drive (network stays up)
+auto_switch = true
+debounce_s = 2.0
+poll_s = 1.0
+
 [audio]
 card = "haptic"
 mpv_device = "alsa/plughw:CARD=haptic"

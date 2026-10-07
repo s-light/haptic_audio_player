@@ -49,6 +49,13 @@ class NfcConfig:
 
 
 @dataclass
+class UsbConfig:
+    auto_switch: bool = True  # hand the data stick to a computer as soon as one enumerates the USB gadget
+    debounce_s: float = 2.0
+    poll_s: float = 1.0
+
+
+@dataclass
 class AudioConfig:
     card: str = "haptic"
     mpv_device: str = "alsa/plughw:CARD=haptic"
@@ -88,6 +95,7 @@ class Config:
     display: DisplayConfig = field(default_factory=DisplayConfig)
     nfc: NfcConfig = field(default_factory=NfcConfig)
     audio: AudioConfig = field(default_factory=AudioConfig)
+    usb: UsbConfig = field(default_factory=UsbConfig)
 
     @property
     def music_dir(self) -> Path:

@@ -107,7 +107,7 @@ class Renderer:
         pad = 10
 
         # status bar
-        label, color = {"playing": ("PLAY", ACCENT), "paused": ("PAUSE", PAUSE), "recording": ("REC", REC)}.get(v.mode, ("READY", DIM))
+        label, color = {"playing": ("PLAY", ACCENT), "paused": ("PAUSE", PAUSE), "recording": ("REC", REC), "computer": ("USB", PAUSE)}.get(v.mode, ("READY", DIM))
         if v.mode == "recording":
             d.ellipse((pad, 12, pad + 14, 26), fill=REC)
             d.text((pad + 22, 8), f"{label}  slot {v.slot}", font=mid, fill=color)

@@ -45,7 +45,7 @@ export default defineConfig(ctx => {
       // https://v2.quasar.dev/quasar-cli-vite/page-routing-with-vue-router#filename-based-routing
       filenameBasedRouting: true,
 
-      vueRouterMode: "hash", // available values: 'hash', 'history'
+      vueRouterMode: "history", // available values: 'hash', 'history'
       // vueRouterBase,
 
       // publicPath: '/',
@@ -88,9 +88,10 @@ export default defineConfig(ctx => {
       // https: true,
       open: false,
       // dev: run `python -m haptic_player --simulate --data-dir /tmp/haptic` (port 8080) next to `pnpm dev`
+      // 127.0.0.1, not "localhost": Node may resolve that to ::1, the backend only listens on IPv4
       proxy: {
-        "/api": "http://localhost:8080",
-        "/ws": { target: "ws://localhost:8080", ws: true }
+        "/api": "http://127.0.0.1:8080",
+        "/ws": { target: "ws://127.0.0.1:8080", ws: true }
       }
     },
 

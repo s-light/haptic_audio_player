@@ -24,6 +24,7 @@ from .library import Library
 from .nfc import NfcReader
 from .player import make_player
 from .recorder import Recorder
+from .storage import FakeBackend, Storage, SysfsBackend
 from .tags import TagStore
 from .web import create_app
 
@@ -76,6 +77,11 @@ async def run(args: argparse.Namespace) -> None:
         buttons = Buttons(pins, cfg.long_press_s, lambda n, k: call(ctl.handle_button(n, k)))
         buttons.start()
 
+    storage = Storage(cfg.usb, FakeBackend() if cfg.simulate else SysfsBackend(), before_computer=ctl.stop,
+                      after_player=ctl.reload_data, on_change=ctl.notify)
+    ctl.storage = storage
+    storage_task = asyncio.create_task(storage.watch())
+
     runner = web.AppRunner(create_app(cfg, ctl, png))
     await runner.setup()
     await web.TCPSite(runner, cfg.host, cfg.port).start()
@@ -87,6 +93,9 @@ async def run(args: argparse.Namespace) -> None:
     await stop.wait()
 
     log.info("shutting down")
+    storage_task.cancel()
+    if storage.mode == "computer":
+        await storage.to_player()  # leave the stick mounted for the next boot
     if recorder.active:
         await recorder.stop()
     for t in (nfc, buttons):

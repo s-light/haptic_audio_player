@@ -9,9 +9,8 @@ Run as your normal user: the script re-execs itself through `sudo` once, so you 
 Every step is idempotent - safe to re-run any time. Steps that need a reboot (the device-tree overlay) stop
 cleanly with a message; reboot and run this again.
 
-Default steps:  packages sudoers groups venv datadir overlay webui service
+Default steps:  packages sudoers groups venv datadir overlay webui service usb-gadget
 Opt-in steps (never part of the default run):
-    usb-gadget     prepare USB mass-storage mode (libcomposite)   - untested on hardware
     readonly-root  make / read-only (fstab 'ro', volatile journal, tmpfs for /var/log) - do this LAST, then reboot
 
 If the root filesystem is already read-only (after readonly-root), run ./readwrite.sh before setup steps and
@@ -61,7 +60,7 @@ def step_sudoers():
         f"{Path(__file__).resolve()} *",
         "/usr/bin/systemctl poweroff", "/usr/bin/systemctl reboot",
         f"/usr/bin/systemctl * {SERVICE}", f"/usr/bin/journalctl -u {SERVICE}*",
-        f"{py} -m haptic_player.usbgadget on", f"{py} -m haptic_player.usbgadget off",
+        f"{py} -m haptic_player.usbgadget attach", f"{py} -m haptic_player.usbgadget detach",
         f"{py} -m haptic_player.usbgadget status",
     ])
 
@@ -149,14 +148,14 @@ def step_service():
 
 
 def step_usb_gadget():
-    """(opt-in) USB mass-storage mode: load libcomposite at boot; check a device controller exists."""
+    """add a USB mass-storage drive to the board's USB gadget (the USB network stays); boot service + first run.
+    NOTE: the first run re-binds the gadget once - the USB network drops for ~1 s (an ssh session over it may
+    need a reconnect)."""
     hs.require_writable_root()
-    hs.write_file("/etc/modules-load.d/haptic-usb-gadget.conf", "libcomposite\n")
-    subprocess.run(["modprobe", "libcomposite"], check=False)
-    udc = Path("/sys/class/udc")
-    udcs = [u.name for u in udc.glob("*")] if udc.exists() else []
-    print(f"    USB device controllers: {udcs or 'NONE - gadget mode will not work'}")
-    print("    toggle from the web UI (System -> USB-Speichermodus) or: sudo .venv/bin/python -m haptic_player.usbgadget on|off")
+    hs.install_systemd_unit(REPO_DIR / "systemd" / "haptic-usb-gadget.service", "haptic-usb-gadget.service",
+                            {"REPO_DIR": REPO_DIR, "VENV_DIR": VENV_DIR}, enable_now=True)
+    hs.run([str(VENV_DIR / "bin" / "python"), "-m", "haptic_player.usbgadget", "status"], cwd=REPO_DIR, check=False)
+    print("    a computer that enumerates the board now gets the data stick automatically (web UI: System).")
 
 
 def step_readonly_root():
@@ -176,9 +175,9 @@ STEPS = [
     ("overlay", step_overlay),
     ("webui", step_webui),
     ("service", step_service),
+    ("usb-gadget", step_usb_gadget),
 ]
 OPTIONAL = [
-    ("usb-gadget", step_usb_gadget),
     ("readonly-root", step_readonly_root),
 ]
 
@@ -210,7 +209,7 @@ def main():
         except NeedsReboot as e:
             print(f"\n{e}")
             sys.exit(0)
-    print("\nall done." + ("" if args else " Optional next steps: ./setup_pb2.py usb-gadget ; ./setup_pb2.py readonly-root (last!)"))
+    print("\nall done." + ("" if args else " Optional next step: ./setup_pb2.py readonly-root (last!)"))
 
 
 if __name__ == "__main__":

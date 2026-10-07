@@ -2,6 +2,13 @@
 import { Notify } from "quasar";
 
 export type Mode = "idle" | "playing" | "paused" | "recording";
+
+export interface StorageState {
+  mode: "player" | "computer";
+  host: boolean; // a computer is connected to the USB port
+  available: boolean; // USB storage mode is set up on the board
+  error: string;
+}
 export type TagType = "album" | "track" | "record";
 
 export interface PlayerState {
@@ -49,6 +56,8 @@ export interface Snapshot {
   learn: LearnState | null;
   message: string;
   nfc_ok: boolean;
+  simulate: boolean;
+  storage: StorageState;
   volume: number;
   on_tag_remove: "none" | "pause" | "stop";
 }

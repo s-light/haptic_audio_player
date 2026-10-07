@@ -25,7 +25,13 @@ it fails. Do it **before** `./setup_pb2.py readonly-root`.
 8. **Recording**: assign an "Aufnahme-Slot" tag, lay it on, press record, speak, press again → file under `recordings/slot-NN/`.
 9. **Hard-shut-off test** (after `readonly-root` + reboot): pull the power while playing, boot again → everything still works,
    `mount | grep ' / '` shows `ro`.
-10. **USB storage mode** (optional): `./setup_pb2.py usb-gadget`, then web UI → System → "Als USB-Stick freigeben", connect a PC.
+10. **Data stick + USB to a computer**: stick (FAT32, label `HAPTIC`) in the host port → `lsblk -f`, `mount | grep haptic`.
+    `systemctl status haptic-usb-gadget` ok; `.venv/bin/python -m haptic_player.usbgadget status` → `"function": true`;
+    the USB network still works (`ping 192.168.7.1`/web UI). Connect to a PC: `cat /sys/class/udc/*/state` → `configured`,
+    after ~2 s the PC shows a drive with your music, the display shows "USB", the web UI banner appears (still reachable).
+    Eject on the PC → the player is back, no auto re-attach until you replug. Web UI "Zurück zum Player" while connected → stays player.
+    Problems: no `mass_storage.haptic` dir → `setup` error (look at `/sys/kernel/config/usb_gadget/*`); Windows ignores the drive → check
+    interface/IAD descriptors of the composite gadget.
 
 Known assumptions to confirm: oscillator frequency (24 MHz), codec as I²S master working with McASP0 in slave mode,
 5 V from `P1.24` is enough for the bonnet amplifier, `PWR.BTN` usable with USB-C power only.

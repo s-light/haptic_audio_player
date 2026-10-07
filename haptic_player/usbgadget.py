@@ -1,120 +1,180 @@
-"""USB mass-storage gadget: export the data partition to a PC (exclusive hand-over, see
-docs/reference/readonly-root-and-storage.md). Must run as root.
+"""USB mass storage next to the board's USB network: hand the data stick to a connected computer.
 
-    sudo python -m haptic_player.usbgadget on|off|status
+The BeagleBoard image's own gadget (`bb-usb-gadgets.service`, configfs `g_multi`: network + serial) stays in
+place - the web UI is reached through its USB network, so it must keep working. `setup` adds ONE extra
+mass-storage function to that gadget (empty drive, "no media"); `attach` / `detach` then only insert / eject the
+medium (no unbind, the network does not flap). Exclusive hand-over: the data partition is unmounted locally
+while the computer owns it. See docs/reference/readonly-root-and-storage.md.
+
+Must run as root (the app calls it through sudo):
+
+    python -m haptic_player.usbgadget setup     # once per boot (haptic-usb-gadget.service)
+    python -m haptic_player.usbgadget attach    # unmount the data partition, give it to the computer
+    python -m haptic_player.usbgadget detach    # computer ejects / unplugged: take it back, fsck, mount
+    python -m haptic_player.usbgadget status    # one JSON line
 """
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
-GADGET = Path("/sys/kernel/config/usb_gadget/haptic")
+CONFIGFS = Path("/sys/kernel/config/usb_gadget")
+UDC_CLASS = Path("/sys/class/udc")
+FUNCTION = "mass_storage.haptic"
 LABEL = "HAPTIC"
 MOUNTPOINT = "/srv/haptic"
+
+
+class GadgetError(RuntimeError):
+    pass
 
 
 def _run(*cmd: str, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, check=check, capture_output=True, text=True)
 
 
-def udc_name() -> str:
-    udcs = sorted(p.name for p in Path("/sys/class/udc").glob("*"))
-    if not udcs:
-        raise RuntimeError("no USB device controller found (/sys/class/udc is empty)")
-    return udcs[0]
+def _write(path: Path, value: str) -> None:
+    """configfs/sysfs attributes act on a write() call - an empty string would not even issue one, so always
+    terminate with a newline (`echo "" > attr`), which the kernel strips."""
+    path.write_text(value + "\n")
 
 
-def is_exported() -> bool:
-    udc = GADGET / "UDC"
-    return udc.exists() and udc.read_text().strip() != ""
+def find_gadget(root: Path | None = None) -> Path | None:
+    """The gadget that owns the UDC (the stock one); else the only/first one."""
+    root = root or CONFIGFS
+    if not root.is_dir():
+        return None
+    found = sorted(p for p in root.iterdir() if p.is_dir())
+    for g in found:
+        udc = g / "UDC"
+        if udc.exists() and udc.read_text().strip():
+            return g
+    return found[0] if found else None
+
+
+def lun_dir(gadget: Path) -> Path:
+    return gadget / "functions" / FUNCTION / "lun.0"
+
+
+def udc_state(udc_class: Path | None = None) -> str:
+    """`configured` once a USB host has enumerated us; a plain powerbank never gets there."""
+    udc_class = udc_class or UDC_CLASS
+    for udc in sorted(udc_class.glob("*")) if udc_class.is_dir() else []:
+        try:
+            return (udc / "state").read_text().strip()
+        except OSError:
+            continue
+    return "none"
+
+
+def read_state(root: Path | None = None, udc_class: Path | None = None) -> dict:
+    """Readable without root (used by the app's watcher)."""
+    g = find_gadget(root)
+    function = g is not None and lun_dir(g).is_dir()
+    attached = False
+    if function:
+        try:
+            attached = bool((lun_dir(g) / "file").read_text().strip())  # type: ignore[arg-type]
+        except OSError:
+            pass
+    return {"function": function, "host": udc_state(udc_class) == "configured", "udc": udc_state(udc_class), "attached": attached}
 
 
 def block_device() -> str:
     dev = _run("blkid", "-L", LABEL, check=False).stdout.strip()
     if not dev:
-        raise RuntimeError(f"no partition with label {LABEL}")
+        raise GadgetError(f"no partition with label {LABEL} (USB stick plugged in?)")
     return dev
 
 
-def _bb_gadget_service() -> bool:
-    """BeagleBoard images ship bb-usb-gadgets.service (USB ethernet + mass storage composite) that owns the UDC."""
-    return _run("systemctl", "cat", "bb-usb-gadgets.service", check=False).returncode == 0
+def is_mounted() -> bool:
+    return _run("mountpoint", "-q", MOUNTPOINT, check=False).returncode == 0
 
 
-def enable() -> None:
-    if is_exported():
-        return
-    if _bb_gadget_service():
-        _run("systemctl", "stop", "bb-usb-gadgets.service", check=False)
-    dev = block_device()
-    r = _run("umount", MOUNTPOINT, check=False)
-    if r.returncode and _run("mountpoint", "-q", MOUNTPOINT, check=False).returncode == 0:
-        raise RuntimeError(f"cannot unmount {MOUNTPOINT}: {r.stderr.strip()}")
-    _run("modprobe", "libcomposite")
-    GADGET.mkdir(parents=True, exist_ok=True)
-    (GADGET / "idVendor").write_text("0x1d6b")  # Linux Foundation
-    (GADGET / "idProduct").write_text("0x0104")  # multifunction composite gadget
-    (GADGET / "bcdUSB").write_text("0x0200")
-    strings = GADGET / "strings" / "0x409"
-    strings.mkdir(parents=True, exist_ok=True)
-    (strings / "serialnumber").write_text("haptic0001")
-    (strings / "manufacturer").write_text("haptic_audio_player")
-    (strings / "product").write_text("Haptic Player Storage")
-    cfg = GADGET / "configs" / "c.1"
-    (cfg / "strings" / "0x409").mkdir(parents=True, exist_ok=True)
-    (cfg / "strings" / "0x409" / "configuration").write_text("mass storage")
-    func = GADGET / "functions" / "mass_storage.0"
-    func.mkdir(parents=True, exist_ok=True)
-    (func / "lun.0" / "removable").write_text("1")
-    (func / "lun.0" / "ro").write_text("0")
-    (func / "lun.0" / "file").write_text(dev)
-    link = cfg / "mass_storage.0"
-    if not link.exists():
-        link.symlink_to(func)
-    (GADGET / "UDC").write_text(udc_name())
-
-
-def disable() -> None:
-    if GADGET.exists():
+def setup() -> None:
+    g = find_gadget()
+    if g is None:
+        raise GadgetError("no USB gadget found - is bb-usb-gadgets.service running?")
+    if not lun_dir(g).is_dir():
+        _run("modprobe", "usb_f_mass_storage", check=False)
+        configs = sorted(p for p in (g / "configs").glob("*") if p.is_dir())
+        if not configs:
+            raise GadgetError(f"{g} has no configuration")
+        udc = (g / "UDC").read_text().strip()
+        if udc:
+            _write(g / "UDC", "")  # unbind once, the network is back in about a second
         try:
-            (GADGET / "UDC").write_text("")
-        except OSError:
-            pass
-        (GADGET / "functions" / "mass_storage.0" / "lun.0" / "file").write_text("")
-        link = GADGET / "configs" / "c.1" / "mass_storage.0"
-        if link.is_symlink():
-            link.unlink()
-        for d in (GADGET / "configs" / "c.1" / "strings" / "0x409", GADGET / "configs" / "c.1",
-                  GADGET / "functions" / "mass_storage.0", GADGET / "strings" / "0x409", GADGET):
+            (g / "functions" / FUNCTION).mkdir(exist_ok=True)
+            link = configs[0] / FUNCTION
+            if not link.exists():
+                link.symlink_to(g / "functions" / FUNCTION)
+        finally:
+            if udc:
+                _write(g / "UDC", udc)
+    lun = lun_dir(g)
+    _write(lun / "removable", "1")
+    _write(lun / "ro", "0")
+    if not (lun / "file").read_text().strip():
+        _write(lun / "file", "")
+
+
+def attach() -> None:
+    g = find_gadget()
+    if g is None or not lun_dir(g).is_dir():
+        setup()
+        g = find_gadget()
+    assert g is not None
+    dev = block_device()
+    if is_mounted():
+        _run("sync")
+        r = _run("umount", MOUNTPOINT, check=False)
+        if r.returncode:
+            raise GadgetError(f"cannot unmount {MOUNTPOINT}: {r.stderr.strip()}")
+    _write(lun_dir(g) / "file", dev)
+
+
+def detach() -> None:
+    g = find_gadget()
+    if g is not None and lun_dir(g).is_dir():
+        lun = lun_dir(g)
+        if (lun / "file").read_text().strip():
             try:
-                d.rmdir()
+                _write(lun / "file", "")
             except OSError:
-                pass
+                _write(lun / "forced_eject", "1")  # host still holds the medium locked
     _run("sync", check=False)
-    if _bb_gadget_service():
-        _run("systemctl", "start", "bb-usb-gadgets.service", check=False)
-    if _run("mountpoint", "-q", MOUNTPOINT, check=False).returncode != 0:
+    try:
+        dev = block_device()
+    except GadgetError:
+        return  # stick pulled meanwhile - nothing to mount
+    if not is_mounted():
+        _run("fsck.vfat", "-a", dev, check=False)  # the computer may have left the dirty bit set
         r = _run("mount", MOUNTPOINT, check=False)
         if r.returncode:
-            raise RuntimeError(f"cannot mount {MOUNTPOINT}: {r.stderr.strip()}")
+            raise GadgetError(f"cannot mount {MOUNTPOINT}: {r.stderr.strip()}")
 
 
 def main(argv: list[str]) -> int:
     action = argv[0] if argv else "status"
     try:
-        if action == "on":
-            enable()
-        elif action == "off":
-            disable()
+        if action == "setup":
+            setup()
+        elif action == "attach":
+            attach()
+        elif action == "detach":
+            detach()
         elif action != "status":
             print(__doc__)
             return 2
-    except (RuntimeError, OSError, subprocess.CalledProcessError) as e:
+    except (GadgetError, OSError, subprocess.CalledProcessError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    print("usb" if is_exported() else "player")
+    state = read_state()
+    state["mounted"] = is_mounted()
+    print(json.dumps(state))
     return 0
 
 

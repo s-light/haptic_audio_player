@@ -1,0 +1,13 @@
+[Unit]
+Description=add an (empty) USB mass-storage drive to the board's USB gadget (network stays)
+After=bb-usb-gadgets.service
+Wants=bb-usb-gadgets.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=__REPO_DIR__
+ExecStart=__VENV_DIR__/bin/python -m haptic_player.usbgadget setup
+
+[Install]
+WantedBy=multi-user.target

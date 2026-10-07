@@ -144,7 +144,7 @@ class MpvPlayer(PlayerBase):
             sock.unlink()
         args = ["mpv", "--idle=yes", "--no-video", "--no-terminal", "--force-window=no", "--audio-display=no",
                 f"--input-ipc-server={sock}", f"--volume={volume}", "--volume-max=100",
-                f"--audio-device={self.cfg.audio.mpv_device}", "--keep-open=no"]
+                f"--audio-device={'auto' if self.cfg.simulate else self.cfg.audio.mpv_device}", "--keep-open=no"]
         self.proc = await asyncio.create_subprocess_exec(*args, stdin=asyncio.subprocess.DEVNULL)
         for _ in range(50):
             if sock.exists():

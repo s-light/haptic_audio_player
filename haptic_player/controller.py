@@ -28,6 +28,7 @@ class Controller:
         self.learn: dict | None = None  # {"type","target","label"} - assign next scanned tag
         self.message = ""
         self.nfc_ok = False
+        self.storage = None  # set by __main__ (haptic_player.storage.Storage)
         self.listeners: list[Callable[[dict], None]] = []
         self.view_sink: Callable[[View], None] | None = None
         self._msg_handle: asyncio.TimerHandle | None = None
@@ -83,6 +84,8 @@ class Controller:
             "learn": self.learn,
             "message": self.message,
             "nfc_ok": self.nfc_ok,
+            "simulate": self.cfg.simulate,
+            "storage": self.storage.snapshot() if self.storage else {"mode": "player", "host": False, "available": False, "error": ""},
             "volume": s["volume"],
             "on_tag_remove": self.cfg.on_tag_remove,
         }
@@ -90,6 +93,8 @@ class Controller:
     def view(self) -> View:
         s, now = self.player.state, self._now_playing()
         mode = self.mode
+        if self.at_computer:
+            return View(mode="computer", title="Speicher am Computer", subtitle="am PC auswerfen oder Kabel ziehen", message=self.message)
         cover = ""
         if now["cover"]:
             cover = str(self.cfg.music_dir / now["cover"])
@@ -125,8 +130,15 @@ class Controller:
         self.notify()
 
     # ---- inputs ------------------------------------------------------
+    @property
+    def at_computer(self) -> bool:
+        return self.storage is not None and self.storage.mode == "computer"
+
     async def handle_tag(self, uid: str) -> None:
         uid = normalize_uid(uid)
+        if self.at_computer:
+            self.flash("Speicher ist am Computer")
+            return
         tag = self.tags.get(uid)
         self.last_scan = {"uid": uid, "known": tag is not None, "time": time.time(),
                           "type": tag.type if tag else None, "target": tag.target if tag else None, "label": tag.label if tag else None}
@@ -187,6 +199,9 @@ class Controller:
 
     async def handle_button(self, name: str, kind: str) -> None:
         log.info("button %s %s", name, kind)
+        if self.at_computer:
+            self.flash("Speicher ist am Computer")
+            return
         if name == "play_pause":
             if kind == "long":
                 await self.stop()
@@ -262,4 +277,10 @@ class Controller:
 
     def cancel_learn(self) -> None:
         self.learn = None
+        self.notify()
+
+    async def reload_data(self) -> None:
+        """The data stick is back from the computer: it may have edited tags.json or the music folder."""
+        self.tags.load()
+        await asyncio.to_thread(self.library.scan)
         self.notify()

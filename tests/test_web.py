@@ -75,7 +75,6 @@ async def test_settings_and_dev_endpoints(client, ctl, cfg):
     ctl.tags.set("AA11", "track", "Single Song.ogg")
     await client.post("/api/dev/scan", json={"uid": "AA11"})
     assert ctl.mode == "playing"
-    assert (await client.post("/api/system/storage", json={"mode": "usb"})).status == 200  # simulated
 
 
 async def test_websocket_pushes_state(client, ctl):
@@ -85,3 +84,27 @@ async def test_websocket_pushes_state(client, ctl):
         await client.post("/api/control", json={"action": "select_slot", "value": 4})
         msg = await ws.receive_json()
         assert msg["slot"] == 4
+
+
+async def test_storage_api_and_write_guard(aiohttp_client, cfg, ctl):
+    from haptic_player.storage import FakeBackend, Storage
+
+    backend = FakeBackend()
+    ctl.storage = Storage(cfg.usb, backend, ctl.stop, ctl.reload_data, ctl.notify)
+    client = await aiohttp_client(create_app(cfg, ctl))
+    ctl.tags.set("AA11", "album", "Kinderlieder")
+    r = await client.post("/api/storage", json={"mode": "computer"})
+    assert r.status == 409 and "Computer" in (await r.json())["error"]  # nobody connected
+    await client.post("/api/dev/usb", json={"host": True})
+    await ctl.storage.tick(0)
+    r = await client.post("/api/storage", json={"mode": "computer"})
+    assert r.status == 200 and (await r.json())["mode"] == "computer"
+    assert (await (await client.get("/api/state")).json())["storage"]["mode"] == "computer"
+    # writes are refused while the computer owns the stick, reads still work
+    assert (await client.post("/api/tags", json={"uid": "BB22", "type": "album", "target": "x"})).status == 409
+    assert (await client.get("/api/tags")).status == 200
+    await ctl.handle_tag("AA11")
+    assert ctl.mode == "idle"  # tag scans are ignored too
+    assert (await client.post("/api/storage", json={"mode": "player"})).status == 200
+    assert (await client.post("/api/tags", json={"uid": "BB22", "type": "album", "target": "Kinderlieder"})).status == 200
+    assert (await client.post("/api/storage", json={"mode": "nope"})).status == 400
