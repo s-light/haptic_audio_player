@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import os
+import math
 import signal
+import struct
 import time
+import wave
 from pathlib import Path
 
 from .config import Config
@@ -28,6 +31,18 @@ def list_slots(cfg: Config) -> list[dict]:
         files = list_slot(cfg, n)
         slots.append({"slot": n, "files": [f.name for f in files]})
     return slots
+
+
+def write_demo_wav(path: Path, seconds: float, rate: int = 22050) -> None:
+    """--simulate: there is no microphone, so a recording is a quiet 440 Hz beep of the recorded length
+    (a valid WAV that mpv and the browser can play)."""
+    frames = max(1, int(rate * max(seconds, 0.5)))
+    samples = (int(6000 * math.sin(2 * math.pi * 440 * i / rate)) for i in range(frames))
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"".join(struct.pack("<h", s) for s in samples))
 
 
 class Recorder:
@@ -70,6 +85,7 @@ class Recorder:
         if self.proc is None:
             return None
         proc, path = self.proc, self.path
+        elapsed = time.monotonic() - self.started
         if proc.returncode is None:
             proc.send_signal(signal.SIGINT)  # arecord finalises the WAV header on SIGINT
             try:
@@ -78,8 +94,10 @@ class Recorder:
                 proc.kill()
                 await proc.wait()
         self.proc = None
+        if path is not None and self.cfg.simulate:
+            write_demo_wav(path, elapsed)
         if path is not None and path.exists():
-            if path.stat().st_size < 64 and not self.cfg.simulate:
+            if path.stat().st_size < 64:
                 path.unlink()  # nothing recorded
                 path = None
             else:

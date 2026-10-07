@@ -90,3 +90,17 @@ async def test_snapshot_and_view(ctl):
     assert snap["mode"] == "playing" and snap["now"]["cover"] == "Kinderlieder/cover.jpg"
     v = ctl.view()
     assert v.mode == "playing" and v.count == 3 and v.cover.endswith("cover.jpg")
+
+
+async def test_simulated_recording_is_a_playable_wav(ctl, cfg):
+    import wave
+
+    ctl.tags.set("BB22", "record", "3")
+    await ctl.handle_tag("BB22")
+    await ctl.handle_button("record", "short")
+    await ctl.handle_button("record", "short")
+    (rec,) = list_slot(cfg, 3)
+    with wave.open(str(rec)) as w:  # valid WAV, at least half a second of audio
+        assert w.getnframes() >= w.getframerate() // 2 and w.getnchannels() == 1
+    await ctl.handle_tag("BB22")
+    assert ctl.mode == "playing"

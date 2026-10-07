@@ -94,6 +94,27 @@
     </div>
 
     <q-separator class="q-my-sm" />
+    <div class="text-caption text-grey q-mb-xs">
+      Aufnahme-Slots – Tag auflegen wählt den Slot (spielt vorhandene
+      Aufnahmen), danach mit der Aufnahme-Taste aufnehmen
+    </div>
+    <div class="list-box">
+      <q-list dense separator>
+        <q-item v-for="n in SLOTS" :key="n">
+          <q-item-section avatar><q-icon name="mic" /></q-item-section>
+          <q-item-section>Slot {{ n }}</q-item-section>
+          <q-item-section side>
+            <TagButtons
+              :placed="isPlaced('record', String(n))"
+              @place="place('record', String(n), `Aufnahme ${n}`)"
+              @remove="removeTag"
+            />
+          </q-item-section>
+        </q-item>
+      </q-list>
+    </div>
+
+    <q-separator class="q-my-sm" />
     <div class="text-caption text-grey q-mb-xs">Computer am USB-Anschluss</div>
     <div class="row q-gutter-sm">
       <q-btn
@@ -122,13 +143,14 @@ import { h, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { QBtn } from "quasar";
 import SimPanel from "@/components/SimPanel.vue";
-import { api, type Album, type Tag } from "@/api";
+import { api, type Album, type Tag, type TagType } from "@/api";
 import { usePlayerStore } from "@/stores/player";
 
 defineProps<{ x: number; y: number }>();
 const emit = defineEmits<{ close: [] }>();
 
-type Kind = "album" | "track";
+type Kind = TagType; // album | track | record
+const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8]; // = auto_record_slots of the backend
 const { state } = storeToRefs(usePlayerStore());
 const uid = ref("04A1B2C3");
 const library = ref<Album[]>([]);

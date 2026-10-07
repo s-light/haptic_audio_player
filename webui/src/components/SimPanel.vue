@@ -24,7 +24,7 @@
         @touchstart.stop
       />
     </q-bar>
-    <q-card-section class="q-pa-sm">
+    <q-card-section class="q-pa-sm sim-body">
       <slot />
     </q-card-section>
   </q-card>
@@ -81,5 +81,9 @@ watch(pos, () => {
   position: fixed;
   z-index: 3000;
   max-width: calc(100vw - 16px);
+}
+.sim-body {
+  max-height: calc(100vh - 150px);
+  overflow: auto;
 }
 </style>
