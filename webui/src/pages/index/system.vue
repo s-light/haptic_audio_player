@@ -125,29 +125,6 @@
         </q-card-actions>
       </q-card>
 
-      <q-card v-if="info?.simulate">
-        <q-card-section>
-          <div class="text-h6">Simulation</div>
-          <img
-            src="/api/display.png"
-            style="image-rendering: pixelated; border: 1px solid #888"
-          />
-          <div class="row q-gutter-sm q-mt-sm">
-            <q-input v-model="fakeUid" label="Fake-Tag UID" dense outlined />
-            <q-btn
-              color="primary"
-              label="Auflegen"
-              @click="api('POST', '/api/dev/scan', { uid: fakeUid })"
-            />
-            <q-btn
-              outline
-              label="Entfernen"
-              @click="api('POST', '/api/dev/remove', {})"
-            />
-          </div>
-        </q-card-section>
-      </q-card>
-
       <q-card>
         <q-card-actions>
           <q-btn
@@ -192,7 +169,6 @@ const settings = reactive<Pick<Settings, "on_tag_remove" | "volume_step">>({
   volume_step: 5
 });
 const info = ref<SystemInfo | null>(null);
-const fakeUid = ref("04A1B2C3");
 
 const disk = computed(() => {
   const d = info.value?.disk;

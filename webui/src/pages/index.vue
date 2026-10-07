@@ -65,15 +65,73 @@
       </q-banner>
       <router-view />
     </q-page-container>
+
+    <template v-if="player.state.simulate">
+      <q-page-sticky position="bottom-right" :offset="[18, 18]">
+        <div class="column q-gutter-sm items-end">
+          <q-btn
+            fab-mini
+            color="secondary"
+            icon="smart_display"
+            @click="displayOpen = !displayOpen"
+          >
+            <q-tooltip anchor="center left" self="center right"
+              >Display-Vorschau</q-tooltip
+            >
+          </q-btn>
+          <q-btn fab color="secondary" icon="nfc" @click="tagOpen = !tagOpen">
+            <q-tooltip anchor="center left" self="center right"
+              >Tag auflegen (Simulation)</q-tooltip
+            >
+          </q-btn>
+        </div>
+      </q-page-sticky>
+      <SimTagPanel v-if="tagOpen" :x="16" :y="110" @close="tagOpen = false" />
+      <SimDisplayPanel
+        v-if="displayOpen"
+        :x="Math.max(16, innerWidth - 290)"
+        :y="110"
+        @close="displayOpen = false"
+      />
+    </template>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref, watch } from "vue";
+import SimDisplayPanel from "@/components/SimDisplayPanel.vue";
+import SimTagPanel from "@/components/SimTagPanel.vue";
 import { api } from "@/api";
 import { usePlayerStore } from "@/stores/player";
 
 const player = usePlayerStore();
 onMounted(() => player.connect());
+// simulation overlays (only when the backend runs with --simulate); open state survives reloads
+const stored = (k: string) => {
+  try {
+    return localStorage.getItem(k) === "1";
+  } catch {
+    return false;
+  }
+};
+const tagOpen = ref(stored("sim-tag-open"));
+const displayOpen = ref(stored("sim-display-open"));
+watch(tagOpen, v => {
+  try {
+    localStorage.setItem("sim-tag-open", v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+});
+watch(displayOpen, v => {
+  try {
+    localStorage.setItem("sim-display-open", v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+});
+
+const innerWidth = window.innerWidth;
+
 const backToPlayer = () => api("POST", "/api/storage", { mode: "player" });
 </script>

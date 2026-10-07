@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .config import Config
 from .library import natural_key
+from .proc import die_with_parent
 
 
 def slot_dir(cfg: Config, slot: int) -> Path:
@@ -55,12 +56,12 @@ class Recorder:
         a = self.cfg.audio
         if self.cfg.simulate:
             self.path.write_bytes(b"")  # placeholder so the UI has something to list
-            self.proc = await asyncio.create_subprocess_exec("sleep", "86400")
+            self.proc = await asyncio.create_subprocess_exec("sleep", "86400", preexec_fn=die_with_parent)
         else:
             self.proc = await asyncio.create_subprocess_exec(
                 "arecord", "-q", "-D", a.record_device, "-f", "S16_LE", "-r", str(a.record_rate),
                 "-c", str(a.record_channels), "-t", "wav", str(self.path),
-                stdin=asyncio.subprocess.DEVNULL,
+                stdin=asyncio.subprocess.DEVNULL, preexec_fn=die_with_parent,
             )
         self.started = time.monotonic()
         return self.path
