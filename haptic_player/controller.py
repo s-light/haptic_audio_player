@@ -85,6 +85,7 @@ class Controller:
             "message": self.message,
             "nfc_ok": self.nfc_ok,
             "simulate": self.cfg.simulate,
+            "audio": self.player.kind,
             "storage": self.storage.snapshot() if self.storage else {"mode": "player", "host": False, "available": False, "error": ""},
             "volume": s["volume"],
             "on_tag_remove": self.cfg.on_tag_remove,

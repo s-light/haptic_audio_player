@@ -57,6 +57,7 @@ export interface Snapshot {
   message: string;
   nfc_ok: boolean;
   simulate: boolean;
+  audio: "mpv" | "fake" | "none";
   storage: StorageState;
   volume: number;
   on_tag_remove: "none" | "pause" | "stop";

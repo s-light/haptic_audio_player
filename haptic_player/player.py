@@ -20,6 +20,8 @@ Callback = Callable[[], None]
 class PlayerBase:
     """State is a flat dict, broadcast to the web UI/display on every change."""
 
+    kind = "none"  # "mpv" = real audio, "fake" = no sound (simulate without mpv)
+
     def __init__(self) -> None:
         self.state: dict = {"active": False, "paused": False, "file": "", "title": "", "position": 0.0,
                             "duration": 0.0, "index": 0, "count": 0, "volume": 70, "label": ""}
@@ -45,6 +47,8 @@ class PlayerBase:
 
 class FakePlayer(PlayerBase):
     """No audio; plays 'virtually' so state/display/UI can be exercised."""
+
+    kind = "fake"
 
     def __init__(self) -> None:
         super().__init__()
@@ -126,6 +130,8 @@ class FakePlayer(PlayerBase):
 
 
 class MpvPlayer(PlayerBase):
+    kind = "mpv"
+
     def __init__(self, cfg: Config) -> None:
         super().__init__()
         self.cfg = cfg
@@ -262,6 +268,6 @@ class MpvPlayer(PlayerBase):
 
 def make_player(cfg: Config) -> PlayerBase:
     if cfg.simulate and shutil.which("mpv") is None:
-        log.warning("mpv not found - using FakePlayer (no audio)")
+        log.warning("mpv not found - using FakePlayer: NO SOUND (install it: sudo apt install mpv)")
         return FakePlayer()
     return MpvPlayer(cfg)

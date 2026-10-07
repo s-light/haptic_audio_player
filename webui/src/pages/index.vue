@@ -15,11 +15,15 @@
         <q-chip
           v-else-if="player.state.simulate"
           dense
-          color="info"
+          :color="player.state.audio === 'mpv' ? 'info' : 'warning'"
           text-color="white"
-          icon="science"
+          :icon="player.state.audio === 'mpv' ? 'science' : 'volume_off'"
         >
-          Simulation
+          {{
+            player.state.audio === "mpv"
+              ? "Simulation"
+              : "Simulation – kein Ton (mpv fehlt)"
+          }}
         </q-chip>
         <q-chip
           v-else

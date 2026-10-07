@@ -79,6 +79,10 @@ async def test_record_flow(ctl, cfg):
     assert ctl.mode == "playing" and ctl.player.state["count"] == 1
 
 
+async def test_snapshot_reports_audio_backend(ctl):
+    assert ctl.snapshot()["audio"] == "fake"  # tests run with the FakePlayer
+
+
 async def test_snapshot_and_view(ctl):
     ctl.tags.set("AA11", "album", "Kinderlieder", "Lieder")
     await ctl.handle_tag("AA11")

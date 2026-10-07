@@ -27,6 +27,7 @@ export const usePlayerStore = defineStore("player", () => {
     message: "",
     nfc_ok: false,
     simulate: false,
+    audio: "none",
     storage: { mode: "player", host: false, available: false, error: "" },
     volume: 0,
     on_tag_remove: "none"
