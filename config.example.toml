@@ -30,6 +30,13 @@ backlight = "GPIO0_63"  # P2.22
 rotation = 0            # 0 / 90 / 180 / 270
 invert = true
 
+[touch]                 # CST328 on the display, driver only (not used by the player yet)
+enabled = false
+i2c_bus = 1             # /dev/i2c-1 = P1.33 SDA / P1.36A SCL
+address = 0x1A
+rst = "GPIO0_61"        # P2.28
+poll_interval = 0.02
+
 [usb]                   # computer connected via USB -> it gets the data stick as a USB drive (network stays up)
 auto_switch = true
 debounce_s = 2.0

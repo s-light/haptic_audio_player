@@ -49,6 +49,16 @@ class NfcConfig:
 
 
 @dataclass
+class TouchConfig:
+    enabled: bool = False  # driver exists (cst328.py), not hooked into the controller yet
+    i2c_bus: int = 1  # /dev/i2c-1 = P1.33 SDA / P1.36A SCL
+    address: int = 0x1A
+    rst: str = "GPIO0_61"  # P2.28
+    interrupt: str = "GPIO0_51"  # P2.24 (unused, polled)
+    poll_interval: float = 0.02
+
+
+@dataclass
 class UsbConfig:
     auto_switch: bool = True  # hand the data stick to a computer as soon as one enumerates the USB gadget
     debounce_s: float = 2.0
@@ -94,6 +104,7 @@ class Config:
     pins: Pins = field(default_factory=Pins)
     display: DisplayConfig = field(default_factory=DisplayConfig)
     nfc: NfcConfig = field(default_factory=NfcConfig)
+    touch: TouchConfig = field(default_factory=TouchConfig)
     audio: AudioConfig = field(default_factory=AudioConfig)
     usb: UsbConfig = field(default_factory=UsbConfig)
 

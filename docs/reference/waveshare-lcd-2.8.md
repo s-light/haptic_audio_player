@@ -24,11 +24,17 @@ Sources
 | TP_INT | touch interrupt | GPIO4 | P2.24 (GPIO0_51) |
 | TP_RST | touch reset | GPIO17 | P2.28 (GPIO0_61) |
 
-## Touch (wired, driver not implemented yet)
+## Touch (wired; driver `haptic_player/cst328.py`, not hooked into the controller yet)
 The CST328 usually answers at I²C address 0x1A – **the same address as the WM8960**, so it is on `I2C1`
 (`/dev/i2c-1`, P1.33 SDA / P1.36A SCL) instead of `I2C2`. The stock DTS enables `main_i2c1` but never routes its
 pins; our overlay does (`haptic_i2c1_pins`). INT (P2.24) and RST (P2.28) are muxed as GPIO as well.
 Check first: `i2cdetect -y 1` → `1a`. The display works without touch.
+No CircuitPython/Blinka driver exists for the CST328 (and Blinka has no PB2 support), so `cst328.py` talks to
+`/dev/i2c-1` directly. Protocol from ESPHome's `cst328` component: 16-bit big-endian registers; reset pulse on RST,
+write `0xD101` (debug mode), read `0xD1FC` (firmware CRC must be `0xCACA`), `0xD204` chip/project, `0xD208` firmware,
+`0xD1F8` resolution, write `0xD109` (normal mode), sync byte `0xAB` to `0xD000`. A poll reads 27 bytes from `0xD000`
+(finger count = low nibble of byte 5; point 0 at offset 0, then 7, 12, …: `id<<4|state, x[11:4], y[11:4],
+x[3:0]<<4|y[3:0], pressure`), then writes `0` to `0xD005` and `0xAB` to `0xD000`.
 
 ## How we drive it
 No kernel framebuffer driver: `haptic_player/display.py` talks to `/dev/spidev0.0` directly (Pillow renders the
