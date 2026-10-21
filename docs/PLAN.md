@@ -8,40 +8,41 @@ Voice Bonnet, PN532, Waveshare LCD, read-only/USB-gadget notes, software-stack n
 
 ## 1. Decisions
 
-| Topic | Decision | Reason |
-| :-- | :-- | :-- |
-| Language | **Python 3 / asyncio** for the device, **Quasar CLI (Vue 3, TypeScript, Pinia)** for the web UI | README preference; Blinka/CircuitPython does not support the PB2 → use plain Linux APIs (see `reference/software-stack.md`). Node was considered, rejected: all hardware libs/projects here are Python. |
-| Audio out/in | WM8960 on the Voice Bonnet via McASP0 (I²S), ALSA card `haptic` | bonnet is a Pi HAT → **wired by jumper wires**, there is no 40-pin socket on the PB2 |
-| Playback | `mpv` over JSON IPC | formats, gapless, position/duration |
-| Recording | `arecord` → WAV, one new file per recording, never overwrites | child safety: nothing recorded is ever lost by accident |
-| NFC | PN532 on I²C2 (0x24), polled, own minimal driver | no Blinka |
-| Tag mapping | `tags.json` (UID → album/track/record-slot) | tags hold no data, replaceable |
-| Display | ST7789 over spidev, rendered with Pillow; optional | |
-| Touch (CST328) | wired/reserved, **not implemented in v1** | address clash with WM8960 (0x1A) → needs I2C1 |
-| Storage | root **read-only**; data on a **USB stick** (FAT32, `LABEL=HAPTIC`) in the PB2's usb1 host port, mounted at `/srv/haptic` | README requirement; simplest, no SPI/kernel risk (4-bit SD is not on the headers) |
-| USB to a computer | the board's USB **network gadget stays** (web UI is reached through it); one mass-storage function is added; when a computer enumerates the gadget it automatically gets the stick, the player pauses; switch back in the UI / eject / unplug | "best case" item; exclusive hand-over, never both at once |
+| Topic             | Decision                                                                                                                                                                                                                                      | Reason                                                                                                                                                                                                  |
+| :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language          | **Python 3 / asyncio** for the device, **Quasar CLI (Vue 3, TypeScript, Pinia)** for the web UI                                                                                                                                               | README preference; Blinka/CircuitPython does not support the PB2 → use plain Linux APIs (see `reference/software-stack.md`). Node was considered, rejected: all hardware libs/projects here are Python. |
+| Audio out/in      | WM8960 on the Voice Bonnet via McASP0 (I²S), ALSA card `haptic`                                                                                                                                                                               | bonnet is a Pi HAT → **wired by jumper wires**, there is no 40-pin socket on the PB2                                                                                                                    |
+| Playback          | `mpv` over JSON IPC                                                                                                                                                                                                                           | formats, gapless, position/duration                                                                                                                                                                     |
+| Recording         | `arecord` → WAV, one new file per recording, never overwrites                                                                                                                                                                                 | child safety: nothing recorded is ever lost by accident                                                                                                                                                 |
+| NFC               | PN532 on I²C2 (0x24), polled, own minimal driver                                                                                                                                                                                              | no Blinka                                                                                                                                                                                               |
+| Tag mapping       | `tags.json` (UID → album/track/record-slot)                                                                                                                                                                                                   | tags hold no data, replaceable                                                                                                                                                                          |
+| Display           | ST7789 over spidev, rendered with Pillow; optional                                                                                                                                                                                            |                                                                                                                                                                                                         |
+| Touch (CST328)    | wired to I²C1 (`/dev/i2c-1`) + INT/RST, pins routed by the overlay; **driver not implemented yet**                                                                                                                                            | address clash with WM8960 (0x1A) → needs I2C1                                                                                                                                                           |
+| Storage           | root **read-only**; data on a **USB stick** (FAT32, `LABEL=HAPTIC`) in the PB2's usb1 host port, mounted at `/srv/haptic`                                                                                                                     | README requirement; simplest, no SPI/kernel risk (4-bit SD is not on the headers)                                                                                                                       |
+| USB to a computer | the board's USB **network gadget stays** (web UI is reached through it); one mass-storage function is added; when a computer enumerates the gadget it automatically gets the stick, the player pauses; switch back in the UI / eject / unplug | "best case" item; exclusive hand-over, never both at once                                                                                                                                               |
 
 ## 2. Hardware / pin plan (details + diagram: `hw/wiring-diagram.svg`, generator `hw/generate-wiring-diagram.py`)
 
-| Function | PB2 pin(s) | Notes |
-| :-- | :-- | :-- |
-| I²C2 SDA / SCL | P1.26 / P1.28 | already muxed by stock DTS; WM8960 0x1A + PN532 0x24 |
-| I²S BCLK / LRCLK | P2.01 / P1.04 | McASP0 ACLKX / AFSX (codec is master) |
-| I²S DAC data (→codec) / ADC data (←codec) | P1.02 / P2.03A | McASP0 AXR0 (TX) / AXR1 (RX) |
-| Bonnet 5 V / 3V3 / GND | P1.24 / P1.14 / P1.15 | |
-| PN532 3V3 / GND | P1.14 / P1.15 | I²C mode, DIP switches |
-| Display SPI MOSI / SCLK / CS | P2.25 / P2.29 / P2.31 | SPI0, `/dev/spidev0.0` |
-| Display DC / RST / BL | P2.17 / P2.18 / P2.22 | GPIO0_64 / 0_53 / 0_63 |
-| Touch INT / RST (reserved) | P2.24 / P2.28 | |
-| Display 3V3 / GND | P2.23 / P2.15 | |
-| Buttons: play-pause, record, prev, next | P2.02, P2.04, P2.06, P2.08 | to GND, internal pull-up; long-press play-pause = stop |
-| On/off button | P2.12 (PWR.BTN) → GND | PMIC power button |
-| Power | USB-C powerbank | |
+| Function                                  | PB2 pin(s)                 | Notes                                                  |
+| :---------------------------------------- | :------------------------- | :----------------------------------------------------- |
+| I²C2 SDA / SCL                            | P1.26 / P1.28              | already muxed by stock DTS; WM8960 0x1A + PN532 0x24   |
+| I²S BCLK / LRCLK                          | P2.01 / P1.04              | McASP0 ACLKX / AFSX (codec is master)                  |
+| I²S DAC data (→codec) / ADC data (←codec) | P1.02 / P2.03A             | McASP0 AXR0 (TX) / AXR1 (RX)                           |
+| Bonnet 5 V / 3V3 / GND                    | P1.24 / P1.14 / P1.15      |                                                        |
+| PN532 3V3 / GND                           | P1.14 / P1.15              | I²C mode, DIP switches                                 |
+| Display SPI MOSI / SCLK / CS              | P2.25 / P2.29 / P2.31      | SPI0, `/dev/spidev0.0`                                 |
+| Display DC / RST / BL                     | P2.17 / P2.18 / P2.22      | GPIO0_64 / 0_53 / 0_63                                 |
+| Touch I²C1 SDA / SCL                      | P1.33 / P1.36A             | needs the overlay's pin-mux; CST328 0x1A               |
+| Touch INT / RST                           | P2.24 / P2.28              |                                                        |
+| Display 3V3 / GND                         | P2.23 / P2.15              |                                                        |
+| Buttons: play-pause, record, prev, next   | P2.02, P2.04, P2.06, P2.08 | to GND, internal pull-up; long-press play-pause = stop |
+| On/off button                             | P2.12 (PWR.BTN) → GND      | PMIC power button                                      |
+| Power                                     | USB-C powerbank            |                                                        |
 
 ## 3. Device-tree overlay (`overlays/k3-am62-pocketbeagle2-haptic-player.dtso`)
 Single overlay: McASP0 pinmux + enable, WM8960 codec node on `main_i2c2`, fixed-clock `haptic_mclk` (24 MHz),
 `simple-audio-card` "haptic" (codec = clock master, I²S, shared LRCLK), `ecap2` disabled (pin clash on P2.01),
-SPI0 re-declared + `spidev` child, GPIO pads (buttons pull-up, display control) muxed to mode 7.
+SPI0 re-declared + `spidev` child, I²C1 pin-mux (touch), GPIO pads (buttons pull-up, display control) muxed to mode 7.
 Reasoning for every line: `reference/devicetree-base-findings.md`. **Written from the DTS sources, not yet booted.**
 
 ## 4. Software architecture (`haptic_player/`)

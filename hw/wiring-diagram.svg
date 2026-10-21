@@ -35,13 +35,15 @@
 <path d="M1250,388 C1375.0,388 1375.0,388 1500,388" fill="none" stroke="#facc15" stroke-width="3"/>
 <path d="M1250,420 C1375.0,420 1375.0,420 1500,420" fill="none" stroke="#facc15" stroke-width="3"/>
 <path d="M1250,452 C1375.0,452 1375.0,452 1500,452" fill="none" stroke="#facc15" stroke-width="3"/>
-<path d="M1250,484 C1375.0,484 1375.0,484 1500,484" fill="none" stroke="#facc15" stroke-width="3"/>
-<path d="M1250,516 C1375.0,516 1375.0,516 1500,516" fill="none" stroke="#facc15" stroke-width="3"/>
-<path d="M1250,727 C1375.0,727 1375.0,727 1500,727" fill="none" stroke="#a3e635" stroke-width="3"/>
-<path d="M1250,759 C1375.0,759 1375.0,759 1500,759" fill="none" stroke="#a3e635" stroke-width="3"/>
-<path d="M1250,791 C1375.0,791 1375.0,791 1500,791" fill="none" stroke="#a3e635" stroke-width="3"/>
-<path d="M1250,823 C1375.0,823 1375.0,823 1500,823" fill="none" stroke="#a3e635" stroke-width="3"/>
-<path d="M1250,1018 C1375.0,1018 1375.0,1018 1500,1018" fill="none" stroke="#9ca3af" stroke-width="3"/>
+<path d="M1250,484 C1375.0,484 1375.0,484 1500,484" fill="none" stroke="#2dd4bf" stroke-width="3"/>
+<path d="M1250,516 C1375.0,516 1375.0,516 1500,516" fill="none" stroke="#2dd4bf" stroke-width="3"/>
+<path d="M1250,548 C1375.0,548 1375.0,548 1500,548" fill="none" stroke="#facc15" stroke-width="3"/>
+<path d="M1250,580 C1375.0,580 1375.0,580 1500,580" fill="none" stroke="#facc15" stroke-width="3"/>
+<path d="M1250,772 C1375.0,772 1375.0,772 1500,772" fill="none" stroke="#a3e635" stroke-width="3"/>
+<path d="M1250,804 C1375.0,804 1375.0,804 1500,804" fill="none" stroke="#a3e635" stroke-width="3"/>
+<path d="M1250,836 C1375.0,836 1375.0,836 1500,836" fill="none" stroke="#a3e635" stroke-width="3"/>
+<path d="M1250,868 C1375.0,868 1375.0,868 1500,868" fill="none" stroke="#a3e635" stroke-width="3"/>
+<path d="M1250,1063 C1375.0,1063 1375.0,1063 1500,1063" fill="none" stroke="#9ca3af" stroke-width="3"/>
 <rect x="40" y="150" width="440" height="433" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
 <text x="56" y="178" font-size="18" font-weight="700" fill="#e5e7eb">Adafruit Voice Bonnet</text>
 <text x="56" y="198" font-size="13" fill="#9aa3b2">WM8960 codec - Raspberry Pi HAT, wired by jumpers</text>
@@ -93,7 +95,7 @@
 <text x="56" y="1111" font-size="13" fill="#9aa3b2">stick = FAT32, label HAPTIC (plugs into the PB2's usb1 host)</text>
 <text x="56" y="1130" font-size="13" fill="#9aa3b2">keep D+/D- short and twisted; stick draws up to ~100-500 mA</text>
 <text x="56" y="1149" font-size="13" fill="#9aa3b2">check P1.03 / P1.05 (DRVVBUS / VBUS) against the PB2 schematic</text>
-<rect x="1500" y="150" width="440" height="465" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
+<rect x="1500" y="150" width="440" height="510" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
 <text x="1516" y="178" font-size="18" font-weight="700" fill="#e5e7eb">Waveshare 2.8" LCD (ST7789 + CST328)</text>
 <text x="1516" y="198" font-size="13" fill="#9aa3b2">optional - 240x320, 3.3 V logic</text>
 <circle cx="1500" cy="228" r="7" fill="#dc2626" stroke="#05060a" stroke-width="1.5"/>
@@ -112,31 +114,34 @@
 <text x="1518" y="425" font-size="15" fill="#e5e7eb">LCD_RST</text>
 <circle cx="1500" cy="452" r="7" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
 <text x="1518" y="457" font-size="15" fill="#e5e7eb">LCD_BL</text>
-<circle cx="1500" cy="484" r="7" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="489" font-size="15" fill="#e5e7eb">TP_INT</text>
-<circle cx="1500" cy="516" r="7" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="521" font-size="15" fill="#e5e7eb">TP_RST</text>
-<text x="1516" y="548" font-size="13" fill="#9aa3b2">TP_SDA / TP_SCL: not connected (v1). The CST328 sits at</text>
-<text x="1516" y="567" font-size="13" fill="#9aa3b2">0x1A like the codec -&gt; needs its own bus (I2C1);</text>
-<text x="1516" y="586" font-size="13" fill="#9aa3b2">touch is not implemented yet</text>
-<rect x="1500" y="649" width="440" height="257" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
-<text x="1516" y="677" font-size="18" font-weight="700" fill="#e5e7eb">Push buttons (4x)</text>
-<text x="1516" y="697" font-size="13" fill="#9aa3b2">one leg to the pin, other leg to GND</text>
-<circle cx="1500" cy="727" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="732" font-size="15" fill="#e5e7eb">play / pause  (long: stop)</text>
-<circle cx="1500" cy="759" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="764" font-size="15" fill="#e5e7eb">record  (start / stop)</text>
-<circle cx="1500" cy="791" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="796" font-size="15" fill="#e5e7eb">prev  (long: volume -)</text>
-<circle cx="1500" cy="823" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="828" font-size="15" fill="#e5e7eb">next  (long: volume +)</text>
-<text x="1516" y="861" font-size="13" fill="#9aa3b2">other leg of every button -&gt; GND (P2.15)</text>
-<rect x="1500" y="940" width="440" height="139" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
-<text x="1516" y="968" font-size="18" font-weight="700" fill="#e5e7eb">On/off button</text>
-<text x="1516" y="988" font-size="13" fill="#9aa3b2">to GND = PMIC power button</text>
-<circle cx="1500" cy="1018" r="7" fill="#9ca3af" stroke="#05060a" stroke-width="1.5"/>
-<text x="1518" y="1023" font-size="15" fill="#e5e7eb">one leg</text>
-<text x="1516" y="1050" font-size="13" fill="#9aa3b2">other leg -&gt; GND  (verify PWR.BTN behaviour on USB-C power)</text>
+<circle cx="1500" cy="484" r="7" fill="#2dd4bf" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="489" font-size="15" fill="#e5e7eb">TP_SDA</text>
+<circle cx="1500" cy="516" r="7" fill="#2dd4bf" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="521" font-size="15" fill="#e5e7eb">TP_SCL</text>
+<circle cx="1500" cy="548" r="7" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="553" font-size="15" fill="#e5e7eb">TP_INT</text>
+<circle cx="1500" cy="580" r="7" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="585" font-size="15" fill="#e5e7eb">TP_RST</text>
+<text x="1516" y="612" font-size="13" fill="#9aa3b2">touch CST328 sits at 0x1A like the codec -&gt; own bus I2C1</text>
+<text x="1516" y="631" font-size="13" fill="#9aa3b2">(/dev/i2c-1); 4.7k pull-ups to 3V3 if the module has none</text>
+<rect x="1500" y="694" width="440" height="257" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
+<text x="1516" y="722" font-size="18" font-weight="700" fill="#e5e7eb">Push buttons (4x)</text>
+<text x="1516" y="742" font-size="13" fill="#9aa3b2">one leg to the pin, other leg to GND</text>
+<circle cx="1500" cy="772" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="777" font-size="15" fill="#e5e7eb">play / pause  (long: stop)</text>
+<circle cx="1500" cy="804" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="809" font-size="15" fill="#e5e7eb">record  (start / stop)</text>
+<circle cx="1500" cy="836" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="841" font-size="15" fill="#e5e7eb">prev  (long: volume -)</text>
+<circle cx="1500" cy="868" r="7" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="873" font-size="15" fill="#e5e7eb">next  (long: volume +)</text>
+<text x="1516" y="906" font-size="13" fill="#9aa3b2">other leg of every button -&gt; GND (P2.15)</text>
+<rect x="1500" y="985" width="440" height="139" rx="12" fill="#1f2430" stroke="#3b4252" stroke-width="2"/>
+<text x="1516" y="1013" font-size="18" font-weight="700" fill="#e5e7eb">On/off button</text>
+<text x="1516" y="1033" font-size="13" fill="#9aa3b2">to GND = PMIC power button</text>
+<circle cx="1500" cy="1063" r="7" fill="#9ca3af" stroke="#05060a" stroke-width="1.5"/>
+<text x="1518" y="1068" font-size="15" fill="#e5e7eb">one leg</text>
+<text x="1516" y="1095" font-size="13" fill="#9aa3b2">other leg -&gt; GND  (verify PWR.BTN behaviour on USB-C power)</text>
 <circle cx="730" cy="228" r="8" fill="#c084fc" stroke="#05060a" stroke-width="1.5"/>
 <text x="748" y="233" font-size="15" fill="#e5e7eb"><tspan font-weight="700">P2.01</tspan><tspan fill="#9aa3b2" dx="8">MCASP0_ACLKX  BCLK</tspan></text>
 <circle cx="730" cy="260" r="8" fill="#c084fc" stroke="#05060a" stroke-width="1.5"/>
@@ -171,20 +176,24 @@
 <text x="1232" y="425" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_53  RST</tspan><tspan font-weight="700" dx="8">P2.18</tspan></text>
 <circle cx="1250" cy="452" r="8" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
 <text x="1232" y="457" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_63  BL</tspan><tspan font-weight="700" dx="8">P2.22</tspan></text>
-<circle cx="1250" cy="484" r="8" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="489" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_51  TP_INT</tspan><tspan font-weight="700" dx="8">P2.24</tspan></text>
-<circle cx="1250" cy="516" r="8" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="521" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_61  TP_RST</tspan><tspan font-weight="700" dx="8">P2.28</tspan></text>
-<circle cx="1250" cy="727" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="732" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_45  play/pause</tspan><tspan font-weight="700" dx="8">P2.02</tspan></text>
-<circle cx="1250" cy="759" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="764" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_46  record</tspan><tspan font-weight="700" dx="8">P2.04</tspan></text>
-<circle cx="1250" cy="791" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="796" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_47  prev</tspan><tspan font-weight="700" dx="8">P2.06</tspan></text>
-<circle cx="1250" cy="823" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="828" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_48  next</tspan><tspan font-weight="700" dx="8">P2.08</tspan></text>
-<circle cx="1250" cy="1018" r="8" fill="#9ca3af" stroke="#05060a" stroke-width="1.5"/>
-<text x="1232" y="1023" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">PWR.BTN</tspan><tspan font-weight="700" dx="8">P2.12</tspan></text>
+<circle cx="1250" cy="484" r="8" fill="#2dd4bf" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="489" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">I2C1_SDA  TP_SDA</tspan><tspan font-weight="700" dx="8">P1.33</tspan></text>
+<circle cx="1250" cy="516" r="8" fill="#2dd4bf" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="521" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">I2C1_SCL  TP_SCL</tspan><tspan font-weight="700" dx="8">P1.36A</tspan></text>
+<circle cx="1250" cy="548" r="8" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="553" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_51  TP_INT</tspan><tspan font-weight="700" dx="8">P2.24</tspan></text>
+<circle cx="1250" cy="580" r="8" fill="#facc15" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="585" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_61  TP_RST</tspan><tspan font-weight="700" dx="8">P2.28</tspan></text>
+<circle cx="1250" cy="772" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="777" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_45  play/pause</tspan><tspan font-weight="700" dx="8">P2.02</tspan></text>
+<circle cx="1250" cy="804" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="809" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_46  record</tspan><tspan font-weight="700" dx="8">P2.04</tspan></text>
+<circle cx="1250" cy="836" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="841" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_47  prev</tspan><tspan font-weight="700" dx="8">P2.06</tspan></text>
+<circle cx="1250" cy="868" r="8" fill="#a3e635" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="873" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">GPIO0_48  next</tspan><tspan font-weight="700" dx="8">P2.08</tspan></text>
+<circle cx="1250" cy="1063" r="8" fill="#9ca3af" stroke="#05060a" stroke-width="1.5"/>
+<text x="1232" y="1068" text-anchor="end" font-size="15" fill="#e5e7eb"><tspan fill="#9aa3b2">PWR.BTN</tspan><tspan font-weight="700" dx="8">P2.12</tspan></text>
 <circle cx="730" cy="1015" r="8" fill="#60a5fa" stroke="#05060a" stroke-width="1.5"/>
 <text x="748" y="1020" font-size="15" fill="#e5e7eb"><tspan font-weight="700">P1.09</tspan><tspan fill="#9aa3b2" dx="8">USB1.D-</tspan></text>
 <circle cx="730" cy="1047" r="8" fill="#60a5fa" stroke="#05060a" stroke-width="1.5"/>
@@ -257,14 +266,14 @@
 <text x="1670.5882352941176" y="1296" text-anchor="middle" font-size="11" fill="#5b6472">31</text>
 <circle cx="1670.5882352941176" cy="1354" r="5" fill="#5b6472"/>
 <text x="1670.5882352941176" y="1380" text-anchor="middle" font-size="11" fill="#5b6472">32</text>
-<circle cx="1775.2941176470588" cy="1322" r="5" fill="#5b6472"/>
-<text x="1775.2941176470588" y="1296" text-anchor="middle" font-size="11" fill="#5b6472">33</text>
+<circle cx="1775.2941176470588" cy="1322" r="9" fill="#2dd4bf" stroke="#05060a" stroke-width="1.5"/>
+<text x="1775.2941176470588" y="1296" text-anchor="middle" font-size="11" fill="#9aa3b2">33</text>
 <circle cx="1775.2941176470588" cy="1354" r="5" fill="#5b6472"/>
 <text x="1775.2941176470588" y="1380" text-anchor="middle" font-size="11" fill="#5b6472">34</text>
 <circle cx="1880.0" cy="1322" r="5" fill="#5b6472"/>
 <text x="1880.0" y="1296" text-anchor="middle" font-size="11" fill="#5b6472">35</text>
-<circle cx="1880.0" cy="1354" r="5" fill="#5b6472"/>
-<text x="1880.0" y="1380" text-anchor="middle" font-size="11" fill="#5b6472">36</text>
+<circle cx="1880.0" cy="1354" r="9" fill="#2dd4bf" stroke="#05060a" stroke-width="1.5"/>
+<text x="1880.0" y="1380" text-anchor="middle" font-size="11" fill="#9aa3b2">36</text>
 <rect x="88.0" y="1310" width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2"/>
 <text x="122.0" y="1296" font-size="11" fill="#f59e0b">pin 1</text>
 <text x="40" y="1466" font-size="20" font-weight="700" fill="#e5e7eb">P2</text>
@@ -347,20 +356,22 @@
 <text x="84" y="1557" font-size="14" fill="#e5e7eb">I2S audio (McASP0)</text>
 <line x1="259.6" y1="1552" x2="293.6" y2="1552" stroke="#22d3ee" stroke-width="5"/>
 <text x="303.6" y="1557" font-size="14" fill="#e5e7eb">I2C2 (codec 0x1A, PN532 0x24)</text>
-<line x1="569.4" y1="1552" x2="603.4" y2="1552" stroke="#fb923c" stroke-width="5"/>
-<text x="613.4" y="1557" font-size="14" fill="#e5e7eb">SPI0 to display</text>
-<line x1="764.4" y1="1552" x2="798.4" y2="1552" stroke="#facc15" stroke-width="5"/>
-<text x="808.4" y="1557" font-size="14" fill="#e5e7eb">display control GPIO</text>
-<line x1="1000.4" y1="1552" x2="1034.4" y2="1552" stroke="#a3e635" stroke-width="5"/>
-<text x="1044.4" y="1557" font-size="14" fill="#e5e7eb">buttons (to GND, internal pull-up)</text>
-<line x1="1351.1999999999998" y1="1552" x2="1385.1999999999998" y2="1552" stroke="#60a5fa" stroke-width="5"/>
-<text x="1395.1999999999998" y="1557" font-size="14" fill="#e5e7eb">USB host (usb1) - data stick</text>
-<line x1="1652.7999999999997" y1="1552" x2="1686.7999999999997" y2="1552" stroke="#dc2626" stroke-width="5"/>
-<text x="1696.7999999999997" y="1557" font-size="14" fill="#e5e7eb">3.3 V</text>
-<line x1="40" y1="1578" x2="74" y2="1578" stroke="#ec4899" stroke-width="5" stroke-dasharray="7,5"/>
-<text x="84" y="1583" font-size="14" fill="#e5e7eb">5 V (dashed - check before wiring)</text>
-<line x1="390.79999999999995" y1="1578" x2="424.79999999999995" y2="1578" stroke="#6b7280" stroke-width="5"/>
-<text x="434.79999999999995" y="1583" font-size="14" fill="#e5e7eb">GND</text>
-<line x1="487.4" y1="1578" x2="521.4" y2="1578" stroke="#9ca3af" stroke-width="5"/>
-<text x="531.4" y="1583" font-size="14" fill="#e5e7eb">power button / reserved</text>
+<line x1="569.4" y1="1552" x2="603.4" y2="1552" stroke="#2dd4bf" stroke-width="5"/>
+<text x="613.4" y="1557" font-size="14" fill="#e5e7eb">I2C1 (touch CST328 0x1A)</text>
+<line x1="838.1999999999999" y1="1552" x2="872.1999999999999" y2="1552" stroke="#fb923c" stroke-width="5"/>
+<text x="882.1999999999999" y="1557" font-size="14" fill="#e5e7eb">SPI0 to display</text>
+<line x1="1033.1999999999998" y1="1552" x2="1067.1999999999998" y2="1552" stroke="#facc15" stroke-width="5"/>
+<text x="1077.1999999999998" y="1557" font-size="14" fill="#e5e7eb">display control GPIO</text>
+<line x1="1269.1999999999998" y1="1552" x2="1303.1999999999998" y2="1552" stroke="#a3e635" stroke-width="5"/>
+<text x="1313.1999999999998" y="1557" font-size="14" fill="#e5e7eb">buttons (to GND, internal pull-up)</text>
+<line x1="1619.9999999999998" y1="1552" x2="1653.9999999999998" y2="1552" stroke="#60a5fa" stroke-width="5"/>
+<text x="1663.9999999999998" y="1557" font-size="14" fill="#e5e7eb">USB host (usb1) - data stick</text>
+<line x1="40" y1="1578" x2="74" y2="1578" stroke="#dc2626" stroke-width="5"/>
+<text x="84" y="1583" font-size="14" fill="#e5e7eb">3.3 V</text>
+<line x1="153.0" y1="1578" x2="187.0" y2="1578" stroke="#ec4899" stroke-width="5" stroke-dasharray="7,5"/>
+<text x="197.0" y="1583" font-size="14" fill="#e5e7eb">5 V (dashed - check before wiring)</text>
+<line x1="503.79999999999995" y1="1578" x2="537.8" y2="1578" stroke="#6b7280" stroke-width="5"/>
+<text x="547.8" y="1583" font-size="14" fill="#e5e7eb">GND</text>
+<line x1="600.4" y1="1578" x2="634.4" y2="1578" stroke="#9ca3af" stroke-width="5"/>
+<text x="644.4" y="1583" font-size="14" fill="#e5e7eb">power button / reserved</text>
 </svg>

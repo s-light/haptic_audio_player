@@ -21,7 +21,12 @@
  *    the pads keep their reset mux with the input buffer OFF):
  *      buttons (mode 7, pull-up): P2.02 P2.04 P2.06 P2.08
  *      display control (outputs): P2.17 DC, P2.18 RST, P2.22 BL
- *      touch (reserved):          P2.24 INT (in), P2.28 RST (out)
+ *      touch:                     P2.24 INT (in), P2.28 RST (out)
+ *  - I2C1 (P1.33 SDA / P1.36A SCL) for the CST328 touch controller. The
+ *    stock DTS enables main_i2c1 but never gives it pinctrl, so the pins
+ *    are not routed; the CST328 answers at 0x1A like the WM8960, hence its
+ *    own bus. Mode 0 / PIN_INPUT_PULLUP as on other AM62 boards (the same
+ *    group as the sibling light-desk i2c1 overlay - do not load both).
  *
  * Pad offsets = register address - 0xF4000 from the official pin table
  * (docs/reference/pocketbeagle2-pinout.md). Flags/mode style copied from
@@ -89,6 +94,13 @@
 		>;
 	};
 
+	haptic_i2c1_pins: haptic-i2c1-pins {
+		pinctrl-single,pins = <
+			AM62X_IOPAD(0x01e8, PIN_INPUT_PULLUP, 0) /* (B17) P1.36A I2C1_SCL */
+			AM62X_IOPAD(0x01ec, PIN_INPUT_PULLUP, 0) /* (A17) P1.33  I2C1_SDA */
+		>;
+	};
+
 	haptic_buttons_pins: haptic-buttons-pins {
 		pinctrl-single,pins = <
 			AM62X_IOPAD(0x00b8, PIN_INPUT_PULLUP, 7) /* (U22) P2.02 GPIO0_45 play/pause */
@@ -134,6 +146,14 @@
 		reg = <0>;
 		spi-max-frequency = <40000000>;
 	};
+};
+
+/* touch controller bus: only the pins are routed here; the CST328 is driven
+ * from userspace via /dev/i2c-1 (no kernel node, so no driver binds) */
+&main_i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&haptic_i2c1_pins>;
+	status = "okay";
 };
 
 &main_i2c2 {

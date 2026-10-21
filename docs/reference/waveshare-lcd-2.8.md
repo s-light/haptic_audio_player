@@ -19,16 +19,16 @@ Sources
 | LCD_DC | data/command | GPIO25 | P2.17 (GPIO0_64) |
 | LCD_RST | reset, active low | GPIO27 | P2.18 (GPIO0_53) |
 | LCD_BL | backlight | GPIO18 | P2.22 (GPIO0_63) – plain on/off |
-| TP_SDA | touch I²C data | GPIO2 | *reserved – see below* |
-| TP_SCL | touch I²C clock | GPIO3 | *reserved* |
-| TP_INT | touch interrupt | GPIO4 | P2.24 (GPIO0_51) – wired, unused in v1 |
-| TP_RST | touch reset | GPIO17 | P2.28 (GPIO0_61) – wired, unused in v1 |
+| TP_SDA | touch I²C data | GPIO2 | P1.33 (I2C1_SDA) |
+| TP_SCL | touch I²C clock | GPIO3 | P1.36A (I2C1_SCL) |
+| TP_INT | touch interrupt | GPIO4 | P2.24 (GPIO0_51) |
+| TP_RST | touch reset | GPIO17 | P2.28 (GPIO0_61) |
 
-## Touch (not implemented in v1)
-The CST328 usually answers at I²C address 0x1A – **the same address as the WM8960**, so it must **not** be put on
-`I2C2`. The planned home is `I2C1` (P1.33 SDA / P1.36A SCL, needs a pin-mux overlay, see the sibling
-light-desk project's `k3-am62-pocketbeagle2-light-desk-i2c1-adc.dtso`). In v1 the touch pins are only
-documented; the display works without them.
+## Touch (wired, driver not implemented yet)
+The CST328 usually answers at I²C address 0x1A – **the same address as the WM8960**, so it is on `I2C1`
+(`/dev/i2c-1`, P1.33 SDA / P1.36A SCL) instead of `I2C2`. The stock DTS enables `main_i2c1` but never routes its
+pins; our overlay does (`haptic_i2c1_pins`). INT (P2.24) and RST (P2.28) are muxed as GPIO as well.
+Check first: `i2cdetect -y 1` → `1a`. The display works without touch.
 
 ## How we drive it
 No kernel framebuffer driver: `haptic_player/display.py` talks to `/dev/spidev0.0` directly (Pillow renders the

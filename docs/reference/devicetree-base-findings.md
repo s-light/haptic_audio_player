@@ -7,7 +7,7 @@ Read from `src-k3-am62-pocketbeagle2-pinmux.dtsi.txt` and `src-k3-am6232-pocketb
 | Item | Base DTS state | Consequence for us |
 | :-- | :-- | :-- |
 | `main_i2c2` (`/dev/i2c-2`) | `okay`, 400 kHz, pinctrl `main_i2c2_pins_default` = **P1.26 SDA / P1.28 SCL** (pads 0xb4/0xb0 mode 1) | WM8960 + PN532 sit here, **no pin-mux needed** |
-| `main_i2c1` | enabled but **no pinctrl** → pins never routed | not used in v1 (touch, later) |
+| `main_i2c1` | enabled but **no pinctrl** → pins never routed | overlay adds `haptic_i2c1_pins` (P1.33 SDA / P1.36A SCL, mode 0) for the touch controller |
 | `main_i2c0` | internal (MSPM0 @0x48, EEPROM @0x50) | do not touch |
 | `main_spi0` | `okay`, pinctrl: CLK 0x1bc, **D0 output**, D1 input, CS0 0x1b4 | we re-declare the pinctrl with kernel-default direction (D0 = MISO in, **D1 = MOSI out**) and add a `spidev` child |
 | `mcasp0/1/2` | not enabled | overlay enables `mcasp0` (P1.02, P1.04, P2.01, P2.03A) |
