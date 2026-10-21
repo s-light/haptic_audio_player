@@ -13,6 +13,8 @@ it fails. Do it **before** `./setup_pb2.py readonly-root`.
    Touch: `i2cdetect -y 1` → `1a` (CST328; try a touch / reset pulse on P2.28 if it stays silent). Nothing → pinmux:
    `grep -i i2c1 /sys/kernel/debug/pinctrl/*/pinmux-pins`, TP_SDA→P1.33, TP_SCL→P1.36A.
    Driver: `.venv/bin/python -m haptic_player.cst328 --info` (chip/firmware, CRC must be CACA), then `--watch` and touch the screen.
+   With the service running, the 4 on-screen buttons appear at the bottom and work like the push buttons (hold prev/next = volume).
+   `journalctl -u haptic-player` shows `touch ready`; if the chip does not answer the player runs without buttons.
 3. **Audio card**: `cat /proc/asound/cards` shows `haptic`; `dmesg | grep -i "wm8960\|mcasp\|haptic"`.
    - no card → codec probe failed (I²C, wrong DT label) or McASP pin conflict (`dmesg | grep -i pinctrl`, `ecap2` must be disabled).
    - card, but silent → privacy switch, oscillator frequency (`haptic_mclk` in the overlay), mixer: `amixer -c haptic scontents`.

@@ -24,7 +24,7 @@ Sources
 | TP_INT | touch interrupt | GPIO4 | P2.24 (GPIO0_51) |
 | TP_RST | touch reset | GPIO17 | P2.28 (GPIO0_61) |
 
-## Touch (wired; driver `haptic_player/cst328.py`, not hooked into the controller yet)
+## Touch (wired; driver `haptic_player/cst328.py`, on-screen buttons in `touch.py`)
 The CST328 usually answers at I²C address 0x1A – **the same address as the WM8960**, so it is on `I2C1`
 (`/dev/i2c-1`, P1.33 SDA / P1.36A SCL) instead of `I2C2`. The stock DTS enables `main_i2c1` but never routes its
 pins; our overlay does (`haptic_i2c1_pins`). INT (P2.24) and RST (P2.28) are muxed as GPIO as well.

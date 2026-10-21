@@ -157,3 +157,14 @@ async def test_spa_history_mode_fallback(aiohttp_client, tmp_path):
     assert await (await client.get("/favicon.ico")).read() == b"ico"
     assert (await client.get("/api/does-not-exist")).status == 404  # API errors stay errors
     assert (await client.get("/../etc/passwd")).status in (200, 404)  # never leaves the dist dir
+
+
+async def test_dev_touch_taps_an_on_screen_button(client, ctl):
+    from haptic_player.display import button_rects
+
+    ctl.tags.set("AA11", "album", "Kinderlieder")
+    await ctl.handle_tag("AA11")
+    x0, y0, x1, y1 = button_rects(240, 320)["play_pause"]
+    r = await client.post("/api/dev/touch", json={"x": (x0 + x1) // 2, "y": (y0 + y1) // 2})
+    assert (await r.json())["button"] == "play_pause" and ctl.mode == "paused"
+    assert (await (await client.post("/api/dev/touch", json={"x": 120, "y": 100})).json())["button"] == ""

@@ -29,6 +29,7 @@ ACCENT = (80, 200, 120)
 REC = (235, 64, 64)
 PAUSE = (240, 180, 60)
 BAR_BG = (45, 50, 62)
+BTN_PRESSED = (85, 93, 115)
 FONT_PATHS = ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans.ttf")
 FONT_BOLD_PATHS = ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf")
 
@@ -49,6 +50,28 @@ class View:
     cover: str = ""  # path of a cover image file
     message: str = ""  # transient hint, e.g. "unknown tag"
     ip: str = ""
+    pressed: str = ""  # on-screen button currently held ("" = none)
+
+
+# On-screen buttons (touch): a row at the bottom, same names as the push buttons. Tap = short press, hold = long
+# press (play_pause long = stop, prev/next long = volume -/+), so the controller needs no extra logic.
+BUTTONS = ("prev", "play_pause", "next", "record")
+BTN_H, BTN_GAP, BTN_MARGIN = 52, 6, 10
+
+
+def button_rects(width: int, height: int) -> dict[str, tuple[int, int, int, int]]:
+    """Button name -> (x0, y0, x1, y1) in image pixels."""
+    bw = (width - 2 * BTN_MARGIN - (len(BUTTONS) - 1) * BTN_GAP) // len(BUTTONS)
+    y0 = height - 8 - BTN_H
+    return {name: (BTN_MARGIN + i * (bw + BTN_GAP), y0, BTN_MARGIN + i * (bw + BTN_GAP) + bw, y0 + BTN_H) for i, name in enumerate(BUTTONS)}
+
+
+def hit_button(x: int, y: int, width: int, height: int) -> str:
+    """Name of the button under (x, y), or "" (the gaps between buttons belong to none)."""
+    for name, (x0, y0, x1, y1) in button_rects(width, height).items():
+        if x0 <= x <= x1 and y0 <= y <= y1:
+            return name
+    return ""
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -83,8 +106,9 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int, max_lines: int
 
 
 class Renderer:
-    def __init__(self, width: int = 240, height: int = 320):
+    def __init__(self, width: int = 240, height: int = 320, controls: bool = False):
         self.w, self.h = width, height
+        self.controls = controls  # draw the on-screen touch buttons
         self._cover_cache: tuple[str, Image.Image] | None = None
 
     def _cover(self, path: str, size: int) -> Image.Image | None:
@@ -118,7 +142,7 @@ class Renderer:
         d.line((pad, 36, self.w - pad, 36), fill=BAR_BG, width=2)
 
         # cover
-        size = min(self.w - 2 * pad, 130)
+        size = min(self.w - 2 * pad, 90 if self.controls else 130)
         cx, cy = (self.w - size) // 2, 44
         cover = self._cover(v.cover, size)
         if cover is not None:
@@ -137,7 +161,9 @@ class Renderer:
             d.text((pad, y), _wrap(d, v.subtitle, small, self.w - 2 * pad, 1)[0], font=small, fill=DIM)
 
         # progress
-        by = self.h - 44
+        show_controls = self.controls and v.mode != "computer"
+        bottom = button_rects(self.w, self.h)["prev"][1] - 4 if show_controls else self.h
+        by = bottom - 44
         d.rounded_rectangle((pad, by, self.w - pad, by + 8), 4, fill=BAR_BG)
         if v.duration > 0:
             fill = int((self.w - 2 * pad) * min(1.0, v.position / v.duration))
@@ -151,7 +177,28 @@ class Renderer:
         if v.message:
             d.rounded_rectangle((pad, 40, self.w - pad, 70), 8, fill=(60, 40, 20))
             d.text((self.w // 2, 55), v.message, font=small, fill=PAUSE, anchor="mm")
+        if show_controls:
+            self._draw_controls(d, v)
         return img
+
+    def _draw_controls(self, d: ImageDraw.ImageDraw, v: View) -> None:
+        for name, (x0, y0, x1, y1) in button_rects(self.w, self.h).items():
+            d.rounded_rectangle((x0, y0, x1, y1), 10, fill=BTN_PRESSED if v.pressed == name else BAR_BG)
+            cx, cy, s = (x0 + x1) // 2, (y0 + y1) // 2, 12
+            if name in ("prev", "next"):
+                k = -1 if name == "prev" else 1  # arrow direction
+                d.polygon([(cx + k * s, cy), (cx - k * s, cy - s), (cx - k * s, cy + s)], fill=FG)
+                d.rectangle((cx + k * s - 2, cy - s, cx + k * s + 2, cy + s), fill=FG)
+            elif name == "play_pause":
+                if v.mode == "playing":
+                    d.rectangle((cx - s, cy - s, cx - 3, cy + s), fill=FG)
+                    d.rectangle((cx + 3, cy - s, cx + s, cy + s), fill=FG)
+                else:
+                    d.polygon([(cx - s + 3, cy - s), (cx - s + 3, cy + s), (cx + s, cy)], fill=ACCENT)
+            elif v.mode == "recording":  # stop square
+                d.rectangle((cx - s + 2, cy - s + 2, cx + s - 2, cy + s - 2), fill=REC)
+            else:
+                d.ellipse((cx - s, cy - s, cx + s, cy + s), fill=REC)
 
 
 def to_rgb565(img: Image.Image) -> bytes:
@@ -307,10 +354,10 @@ class DisplayThread(threading.Thread):
                 log.exception("display update failed")
 
 
-def make_display(cfg: DisplayConfig, simulate: bool, png_path: Path) -> DisplayThread | None:
+def make_display(cfg: DisplayConfig, simulate: bool, png_path: Path, controls: bool = False) -> DisplayThread | None:
     if not cfg.enabled:
         return None
-    renderer = Renderer(cfg.width, cfg.height) if cfg.rotation in (0, 180) else Renderer(cfg.height, cfg.width)
+    renderer = Renderer(cfg.width, cfg.height, controls) if cfg.rotation in (0, 180) else Renderer(cfg.height, cfg.width, controls)
     if simulate:
         sink: Sink = PngSink(png_path)
     else:
@@ -333,9 +380,10 @@ if __name__ == "__main__":
     ap.add_argument("--test", action="store_true", help="show colour bars then the sample screen on the real panel")
     ap.add_argument("--png", help="render the sample screen to this PNG instead")
     ap.add_argument("--rotation", type=int, default=0)
+    ap.add_argument("--controls", action="store_true", help="draw the on-screen touch buttons")
     a = ap.parse_args()
     cfg = DisplayConfig(rotation=a.rotation)
-    r = Renderer(cfg.width, cfg.height) if a.rotation in (0, 180) else Renderer(cfg.height, cfg.width)
+    r = Renderer(cfg.width, cfg.height, a.controls) if a.rotation in (0, 180) else Renderer(cfg.height, cfg.width, a.controls)
     if a.png:
         r.render(SAMPLE).save(a.png)
         print("wrote", a.png)

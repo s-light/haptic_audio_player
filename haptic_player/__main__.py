@@ -18,6 +18,7 @@ from aiohttp import web
 from .audio import init_mixer
 from .buttons import Buttons
 from .config import load_config
+from .cst328 import open_from_config
 from .controller import Controller
 from .display import make_display
 from .library import Library
@@ -26,9 +27,22 @@ from .player import make_player
 from .recorder import Recorder
 from .storage import FakeBackend, Storage, SysfsBackend
 from .tags import TagStore
+from .touch import TouchReader
 from .web import create_app
 
 log = logging.getLogger("haptic")
+
+
+def open_touch(cfg):
+    """CST328 ready for polling, or (None, None) - the player works without touch (and then draws no buttons)."""
+    try:
+        chip, release = open_from_config(cfg.touch)
+        info = chip.setup()
+    except Exception as e:
+        log.warning("touch unavailable (%s) - running without on-screen buttons", e)
+        return None, None
+    log.info("touch ready: %s", info)
+    return chip, release
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -50,8 +64,11 @@ async def run(args: argparse.Namespace) -> None:
     await player.start(cfg.volume)
     await init_mixer(cfg)
 
+    touch_chip = release_touch = None
+    if not cfg.simulate and cfg.display.enabled and cfg.touch.enabled:
+        touch_chip, release_touch = await asyncio.to_thread(open_touch, cfg)
     png = cfg.runtime_dir / "display.png"
-    display = make_display(cfg.display, cfg.simulate, png)
+    display = make_display(cfg.display, cfg.simulate, png, controls=cfg.simulate or touch_chip is not None)
     if display:
         ctl.view_sink = display.update
         ctl.notify()
@@ -77,6 +94,13 @@ async def run(args: argparse.Namespace) -> None:
         buttons = Buttons(pins, cfg.long_press_s, lambda n, k: call(ctl.handle_button(n, k)))
         buttons.start()
 
+    touch = None
+    if touch_chip is not None:
+        size = (cfg.display.height, cfg.display.width) if cfg.display.rotation in (90, 270) else (cfg.display.width, cfg.display.height)
+        touch = TouchReader(touch_chip, *size, cfg.display.rotation, cfg.long_press_s, cfg.touch.poll_interval,
+                            lambda n, k: call(ctl.handle_button(n, k)), lambda n: loop.call_soon_threadsafe(ctl.set_pressed, n))
+        touch.start()
+
     storage = Storage(cfg.usb, FakeBackend() if cfg.simulate else SysfsBackend(), before_computer=ctl.stop,
                       after_player=ctl.reload_data, on_change=ctl.notify)
     ctl.storage = storage
@@ -98,11 +122,14 @@ async def run(args: argparse.Namespace) -> None:
         await storage.to_player()  # leave the stick mounted for the next boot
     if recorder.active:
         await recorder.stop()
-    for t in (nfc, buttons):
+    for t in (nfc, buttons, touch):
         if t:
             t.stop()
     if display:
         display.stop()
+    if touch_chip is not None:
+        touch_chip.close()
+        release_touch()
     await runner.cleanup()
     await player.close()
 

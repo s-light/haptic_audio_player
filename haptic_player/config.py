@@ -50,7 +50,7 @@ class NfcConfig:
 
 @dataclass
 class TouchConfig:
-    enabled: bool = False  # driver exists (cst328.py), not hooked into the controller yet
+    enabled: bool = True  # on-screen buttons; needs the display, and is skipped (with a log line) if no CST328 answers
     i2c_bus: int = 1  # /dev/i2c-1 = P1.33 SDA / P1.36A SCL
     address: int = 0x1A
     rst: str = "GPIO0_61"  # P2.28

@@ -15,6 +15,7 @@ from aiohttp import WSMsgType, web
 
 from .config import AUDIO_EXTENSIONS, COVER_EXTENSIONS, Config, save_persisted
 from .controller import Controller
+from .display import hit_button
 from .library import UnsafePath, is_audio, safe_join
 from .recorder import list_slots, slot_dir
 from .tags import TYPES
@@ -387,6 +388,15 @@ def create_app(cfg: Config, ctl: Controller, png_path: Path | None = None) -> we
             d = await json_body(request)
             await ctl.handle_button(str(d.get("name")), str(d.get("kind", "short")))
             return web.json_response({"ok": True})
+
+        @routes.post("/api/dev/touch")
+        async def dev_touch(request):
+            """Tap on the display image (240x320 pixels) -> the on-screen button under it."""
+            d = await json_body(request)
+            name = hit_button(int(d.get("x", -1)), int(d.get("y", -1)), cfg.display.width, cfg.display.height)
+            if name:
+                await ctl.handle_button(name, str(d.get("kind", "short")))
+            return web.json_response({"ok": True, "button": name})
 
     @routes.get("/api/display.png")
     async def display_png(request):

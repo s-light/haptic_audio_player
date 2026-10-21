@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import logging
 import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Callable
 
@@ -23,6 +24,7 @@ class Controller:
     def __init__(self, cfg: Config, player: PlayerBase, recorder: Recorder, library: Library, tags: TagStore):
         self.cfg, self.player, self.recorder, self.library, self.tags = cfg, player, recorder, library, tags
         self.selected_slot = 0
+        self.touch_pressed = ""  # on-screen button under a finger (display highlight)
         self.current: tuple[str, str] | None = None  # (type, target) of what is loaded
         self.last_play: tuple[str, str] | None = None
         self.last_scan: dict | None = None
@@ -94,6 +96,9 @@ class Controller:
         }
 
     def view(self) -> View:
+        return replace(self._view(), pressed=self.touch_pressed)
+
+    def _view(self) -> View:
         s, now = self.player.state, self._now_playing()
         mode = self.mode
         if self.at_computer:
@@ -133,6 +138,12 @@ class Controller:
                 log.exception("listener failed")
         if self.view_sink:
             self.view_sink(self.view())
+
+    def set_pressed(self, name: str) -> None:
+        if name != self.touch_pressed:
+            self.touch_pressed = name
+            if self.view_sink:
+                self.view_sink(self.view())
 
     def flash(self, message: str, seconds: float = 3.0) -> None:
         self.message = message

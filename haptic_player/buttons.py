@@ -36,6 +36,11 @@ class ButtonLogic:
             return []
         return [(name, "long" if t - start >= self.long_press_s else "short")]
 
+    def cancel(self, name: str) -> None:
+        """Forget a press without any event (e.g. the finger slid off the on-screen button)."""
+        self._down.pop(name, None)
+        self._fired.discard(name)
+
     def poll(self, t: float) -> list[Event]:
         out = []
         for name, start in self._down.items():
