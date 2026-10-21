@@ -192,7 +192,7 @@ def main():
         return
 
     if os.geteuid() != 0:
-        os.execvp("sudo", ["sudo", "-E", str(Path(__file__).resolve()), *args])
+        os.execvp("sudo", ["sudo", str(Path(__file__).resolve()), *args])
 
     every = dict(STEPS + OPTIONAL)
     if args:
