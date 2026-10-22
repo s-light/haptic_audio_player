@@ -9,9 +9,8 @@ User=__USER__
 Group=__USER__
 SupplementaryGroups=audio i2c gpio spi
 WorkingDirectory=__REPO_DIR__
-# port 80: the web UI is reached by just typing the board's IP; the unprivileged user may bind it via the capability
-ExecStart=__VENV_DIR__/bin/python -m haptic_player --data-dir __DATA_DIR__ --port 80
-AmbientCapabilities=CAP_NET_BIND_SERVICE
+# only reachable through the nginx proxy on port 80 (nginx/haptic-player.conf, setup step `nginx`)
+ExecStart=__VENV_DIR__/bin/python -m haptic_player --data-dir __DATA_DIR__ --host 127.0.0.1 --port 8080
 # /run/haptic (mpv IPC socket, display frame) - root is read-only, /run is tmpfs
 RuntimeDirectory=haptic
 Restart=always

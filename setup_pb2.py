@@ -9,7 +9,7 @@ Run as your normal user: the script re-execs itself through `sudo` once, so you 
 Every step is idempotent - safe to re-run any time. Steps that need a reboot (the device-tree overlay) stop
 cleanly with a message; reboot and run this again.
 
-Default steps:  packages sudoers groups venv datadir overlay webui service usb-gadget
+Default steps:  packages sudoers groups venv datadir overlay webui service nginx usb-gadget
 Opt-in steps (never part of the default run):
     readonly-root  make / read-only (fstab 'ro', volatile journal, tmpfs for /var/log) - do this LAST, then reboot
 
@@ -142,13 +142,26 @@ def step_webui():
 def step_service():
     """install + enable + (re)start haptic-player.service."""
     hs.require_writable_root()
-    # the stock BeagleBoard image runs nginx (welcome page) on port 80, which the web UI needs
-    if subprocess.run(["systemctl", "is-active", "--quiet", "nginx.service"]).returncode == 0:
-        print("    stopping + disabling the stock nginx (the web UI listens on port 80 itself)")
-        hs.run(["systemctl", "disable", "--now", "nginx.service"])
     hs.install_systemd_unit(REPO_DIR / "systemd" / SERVICE, SERVICE, {
         "USER": user(), "REPO_DIR": REPO_DIR, "VENV_DIR": VENV_DIR, "DATA_DIR": DATA_DIR,
     }, enable_now=True)
+
+
+def step_nginx():
+    """nginx on port 80 as reverse proxy to the player (127.0.0.1:8080); replaces the stock image's default site."""
+    hs.require_writable_root()
+    hs.apt_install("nginx")
+    hs.write_file("/etc/nginx/sites-available/haptic-player", (REPO_DIR / "nginx" / "haptic-player.conf").read_text())
+    link = Path("/etc/nginx/sites-enabled/haptic-player")
+    if not link.is_symlink():
+        link.symlink_to("/etc/nginx/sites-available/haptic-player")
+    stock = Path("/etc/nginx/sites-enabled/default")
+    if stock.is_symlink() or stock.exists():
+        print("    switching off nginx's stock default site (file stays in /etc/nginx/sites-available)")
+        stock.unlink()
+    hs.run(["nginx", "-t"])
+    hs.run(["systemctl", "enable", "nginx.service"])
+    hs.run(["systemctl", "restart", "nginx.service"])
 
 
 def step_usb_gadget():
@@ -179,6 +192,7 @@ STEPS = [
     ("overlay", step_overlay),
     ("webui", step_webui),
     ("service", step_service),
+    ("nginx", step_nginx),
     ("usb-gadget", step_usb_gadget),
 ]
 OPTIONAL = [
