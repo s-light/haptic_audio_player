@@ -142,6 +142,10 @@ def step_webui():
 def step_service():
     """install + enable + (re)start haptic-player.service."""
     hs.require_writable_root()
+    # the stock BeagleBoard image runs nginx (welcome page) on port 80, which the web UI needs
+    if subprocess.run(["systemctl", "is-active", "--quiet", "nginx.service"]).returncode == 0:
+        print("    stopping + disabling the stock nginx (the web UI listens on port 80 itself)")
+        hs.run(["systemctl", "disable", "--now", "nginx.service"])
     hs.install_systemd_unit(REPO_DIR / "systemd" / SERVICE, SERVICE, {
         "USER": user(), "REPO_DIR": REPO_DIR, "VENV_DIR": VENV_DIR, "DATA_DIR": DATA_DIR,
     }, enable_now=True)

@@ -26,7 +26,7 @@ it fails. Do it **before** `./setup_pb2.py readonly-root`.
 6. **Display**: `ls /dev/spidev0.0`; `.venv/bin/python -m haptic_player.display --test`
    (colour bars, then the sample screen). Black/noise → MOSI direction: the overlay assumes D1 = MOSI (P2.25); if
    your kernel's McSPI is configured the other way, wire MOSI to P2.27 (SPI0_D0) instead. Colours inverted → `invert = false`.
-7. **Player**: open `http://<board>:8080`, upload an album (drag & drop), assign a tag via "Tag zuweisen", lay it on the reader.
+7. **Player**: open `http://<board-ip>` (port 80; the service stops the stock nginx, which held it), upload an album (drag & drop), assign a tag via "Tag zuweisen", lay it on the reader.
 8. **Recording**: assign an "Aufnahme-Slot" tag, lay it on, press record, speak, press again → file under `recordings/slot-NN/`.
 9. **Hard-shut-off test** (after `readonly-root` + reboot): pull the power while playing, boot again → everything still works,
    `mount | grep ' / '` shows `ro`.

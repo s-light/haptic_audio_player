@@ -5,7 +5,7 @@ volume = 70             # 0..100 (mpv software volume)
 volume_step = 5         # long-press prev/next
 long_press_s = 0.8
 on_tag_remove = "none"  # none | pause | stop
-port = 8080
+port = 8080          # dev default; the systemd service starts with --port 80
 
 [pins]                  # GPIOx_y (official pin table) or a gpioinfo line name such as "P2.02"
 play_pause = "GPIO0_45" # P2.02
